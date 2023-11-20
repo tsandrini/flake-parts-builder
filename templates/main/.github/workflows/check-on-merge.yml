@@ -1,0 +1,20 @@
+name: "Run various checks on merge (pull) request"
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  check:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Complete nix setup
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: pre-commit checks
+        run: nix develop .#dev --impure --command bash -c "pre-commit run --all-files"
+
+      - name: Check the flake
+        run: nix develop .#dev --impure --command bash -c "nix flake check --impure --show-trace"

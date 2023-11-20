@@ -1,5 +1,5 @@
 {
-  description = "PracticalFlakesTemplate - TODO";
+  description = "PracticalFlakesTemplate - Highly opinionated nix flakes starter template that focuses on modularity.";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -23,6 +23,7 @@
 
       flake = {
         templates = {
+          default = inputs.self.templates.main;
           main = {
             path = ./templates/main;
             description = "Highly opinionated nix flakes starter template that focuses on modularity.";
@@ -37,7 +38,6 @@
             '';
           };
         };
-        defaultTemplate = inputs.self.templates.main;
       };
 
       perSystem = {
