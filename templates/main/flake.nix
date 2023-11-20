@@ -27,8 +27,8 @@
 
     projectPath = ./.;
 
+    # TODO change name if needed
     lib = nixpkgs.lib.extend (self: _super: {
-      # TODO change name if needed
       practicalFlakes = import ./lib {
         inherit inputs projectPath;
         pkgs = nixpkgs;
@@ -48,7 +48,7 @@
         pkgs,
         ...
       }: {
-        _module.args.pkgs = mkNixpkgs inputs.nixpkgs system [];
+        _module.args.pkgs = mkNixpkgs nixpkgs system [];
       };
     };
 }

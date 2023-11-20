@@ -21,6 +21,25 @@
       imports = with inputs; [treefmt-nix.flakeModule devenv.flakeModule];
       systems = import inputs.systems;
 
+      flake = {
+        templates = {
+          main = {
+            path = ./templates/main;
+            description = "Highly opinionated nix flakes starter template that focuses on modularity.";
+            welcomeText = ''
+              Hi! You've just created a fresh new flakes project using the
+              practical-flakes-template. You can start by looking around or
+              running the development environment either via direnv (`direnv allow`)
+              or `nix develop .#dev --impure`.
+
+              For more info refer to
+              https://github.com/tsandrini/practical-flakes-template/
+            '';
+          };
+        };
+        defaultTemplate = inputs.self.templates.main;
+      };
+
       perSystem = {
         config,
         pkgs,
