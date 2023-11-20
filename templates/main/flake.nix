@@ -1,12 +1,12 @@
 {
-  description = "TODO Add description :sunglasses:";
+  description = "practicalFlakes - TODO Add description :sunglasses:";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     systems.url = "github:nix-systems/default";
 
-    # dev and formatting
+    # devenv.sh and treefmt
     treefmt-nix.url = "github:numtide/treefmt-nix";
     devenv.url = "github:cachix/devenv";
     mk-shell-bin.url = "github:rrbutani/nix-mk-shell-bin";
@@ -17,8 +17,12 @@
   };
 
   nixConfig = {
-    extra-trusted-public-keys = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
-    extra-substituters = "https://devenv.cachix.org";
+    extra-trusted-public-keys = [
+      "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
+    ];
+    extra-substituters = [
+      "https://devenv.cachix.org"
+    ];
   };
 
   outputs = inputs @ {flake-parts, ...}: let
@@ -41,7 +45,7 @@
       imports = flatten (mapModules ./parts (x: x));
 
       systems = import inputs.systems;
-      flake.lib = lib.tensorfiles;
+      flake.lib = lib.practicalFlakes;
 
       perSystem = {
         system,

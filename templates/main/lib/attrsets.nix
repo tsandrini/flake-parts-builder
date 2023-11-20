@@ -1,3 +1,4 @@
+# --- lib/attrsets.nix
 {lib, ...}:
 with lib;
 with builtins; rec {

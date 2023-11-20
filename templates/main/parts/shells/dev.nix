@@ -18,11 +18,6 @@
     # -- misc --
     markdownlint-cli # markdown linting
     nodePackages.prettier
-    typos # spell checking
-    # -- git, flakehub --
-    commitizen
-    cz-cli
-
     treefmt
   ];
 
@@ -34,11 +29,9 @@
   pre-commit = {
     hooks = {
       treefmt.enable = true;
-      # Everything below is stuff that I couldn't make work with treefmt
+      # Everything below is stuff that is missing from treefmt
       nil.enable = true;
-      commitizen.enable = true;
       markdownlint.enable = true;
-      typos.enable = true;
       actionlint.enable = true;
     };
     settings = {
@@ -46,9 +39,15 @@
     };
   };
 
+  scripts = {
+    "rename-project".exec = ''
+      find $1 \( -type d -name .git -prune \) -o -type f -print0 | xargs -0 sed -i "s/practicalFlakes/$2/g"
+    '';
+  };
+
   enterShell = ''
     echo ""
-    echo "~~ Welcome to the practical flakes devshell! ~~
+    echo "~~ Welcome to the practicalFlakes devshell! ~~
 
     [Fortune of the Day] $(fortune)" | cowsay -W 120 -T "U " | lolcat -F 0.3 -p 10 -t
     echo ""

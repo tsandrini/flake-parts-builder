@@ -1,3 +1,4 @@
+# --- lib/modules.nix
 {
   lib,
   self,
@@ -80,7 +81,6 @@ in
           hostPlatform = system;
           overlays = let
             pkgsOverlay = _final: _prev: {
-              # TODO change name if needed
               practicalFlake = inputs.self.packages.${system};
             };
           in

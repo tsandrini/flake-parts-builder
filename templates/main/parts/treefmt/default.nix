@@ -1,3 +1,4 @@
+# --- parts/treefmt/default.nix
 {
   projectPath,
   inputs,

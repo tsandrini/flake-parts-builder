@@ -1,8 +1,9 @@
+# --- lib/maintainers.nix
 _: {
-  # tsandrini = {
-  #   email = "tomas.sandrini@seznam.cz";
-  #   name = "Tomáš Sandrini";
-  #   github = "tsandrini";
-  #   githubId = 21975189;
+  # exampleMaintainer = {
+  #   email = "exampleMaintainer@myMail.com";
+  #   name = "Example Maintainer";
+  #   github = "exampleMaintainer";
+  #   githubId = 12345678;
   # };
 }

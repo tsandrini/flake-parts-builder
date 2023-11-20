@@ -6,7 +6,7 @@
     ...
   }: {
     packages = {
-      example-package = pkgs.callPackage ./example-package {inherit lib system;};
+      example-package = pkgs.callPackage ./example-package.nix {inherit lib system;};
     };
   };
 }

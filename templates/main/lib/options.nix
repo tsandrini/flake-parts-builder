@@ -1,3 +1,4 @@
+# --- lib/options.nix
 {lib, ...}:
 with lib;
 with lib.types;

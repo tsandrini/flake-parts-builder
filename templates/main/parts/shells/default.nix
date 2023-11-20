@@ -1,14 +1,17 @@
 # --- parts/shells/default.nix
-{inputs, ...}: {
+{
+  inputs,
+  projectPath,
+  ...
+}: {
   imports = with inputs; [devenv.flakeModule];
   perSystem = {
     config,
     pkgs,
-    inputs',
     ...
   }: {
     devenv.shells.dev = import ./dev.nix {
-      inherit pkgs inputs';
+      inherit pkgs projectPath;
       treefmt = config.treefmt.build.wrapper;
     };
   };
