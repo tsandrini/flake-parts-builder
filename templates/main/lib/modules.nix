@@ -81,7 +81,7 @@ in
           hostPlatform = system;
           overlays = let
             pkgsOverlay = _final: _prev: {
-              practicalFlake = inputs.self.packages.${system};
+              practicalFlakes = inputs.self.packages.${system};
             };
           in
             [pkgsOverlay]
