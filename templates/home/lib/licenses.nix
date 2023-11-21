@@ -1,0 +1,2 @@
+# --- lib/licenses.nix
+_: {}
