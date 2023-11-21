@@ -29,7 +29,7 @@ And you're good to go! 👍
 3. [treefmt](https://github.com/numtide/treefmt) is the one and only formatter
    to rule them all 🙏
 4. Already preconfigured [github actions](https://docs.github.com/en/actions)
-   and [gitlab CI](ttps://docs.gitlab.com/ee/ci/) 💪
+   and [gitlab CI](https://docs.gitlab.com/ee/ci/) 💪
 5. Prepared for custom `lib` overrides 🤓
    - depending on what you're currently aiming to write, you might need some
      custom helpers or library functions, this template
@@ -51,4 +51,8 @@ identifier. This can be renamed in the whole project using the script
 rename-project . myAwesomeApp
 ```
 
-## Resources
+## Notes
+
+- `pkgs` are by default enabled to allow **unfree** licenses, if you'd prefer not
+  to have this enabled, simply remove the line in the `lib/modules.nix:mkNixpkgs`
+  helper function
