@@ -49,6 +49,18 @@
             path = ./templates/minimal;
             description = "Minimal version of the highly opiniated nix flakes starter template.";
           };
+
+          isolated = {
+            inherit welcomeText;
+            path = ./templates/isolated;
+            description = "Isolated (./nix) version of the highly opiniated nix flakes starter template.";
+          };
+
+          isolated-minimal = {
+            inherit welcomeText;
+            path = ./templates/isolated-minimal;
+            description = "Isolated (./nix) and minimal version of the highly opiniated nix flakes starter template.";
+          };
         };
       };
 
