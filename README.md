@@ -75,6 +75,15 @@ be better suited for your needs
 - **isolated-minimal**: Isolated combined with minimal, that is, structurally the
   same as minimal, however, stripped out of all the examples and unnecessary code
 
+You can install your desired template variant using
+
+```bash
+nix flake init -t github:tsandrini/practical-flakes-template#myVariant
+```
+
+For example,
+`nix flake init -t github:tsandrini/practical-flakes-template#isolated-minimal`.
+
 ## Notes
 
 - `pkgs` are by default enabled to allow **unfree** licenses, if you'd prefer not
