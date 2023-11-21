@@ -1,0 +1,14 @@
+image: nixos/nix:latest
+
+variables:
+  NIX_CONF_DIR: "/etc/nix"
+
+before_script:
+  - echo 'experimental-features = nix-command flakes' > $NIX_CONF_DIR/nix.conf
+
+check:
+  script:
+    - nix develop .#dev --impure --command bash -c "pre-commit run --all-files"
+    - nix develop .#dev --impure --command bash -c "nix flake check --impure --show-trace"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'

@@ -2,16 +2,19 @@
 {lib, ...}:
 with lib;
 with builtins; rec {
+  # Example function
+  # -----------------
   /*
-  Map function with flipped arguments.
+  # Map function with flipped arguments.
 
-  *Type*: `flipMap :: (a -> b) -> [a] -> [b]`
+  # *Type*: `flipMap :: (a -> b) -> [a] -> [b]`
 
-  Example:
-  ```nix title="Example" linenums="1"
-  flipmap (x: x * x) [ 1 2 3 ]
-    => [ 1 4 9 ]
-  ```
+  # Example:
+  # ```nix title="Example" linenums="1"
+  # flipmap (x: x * x) [ 1 2 3 ]
+  #   => [ 1 4 9 ]
+  # ```
+  #
   */
-  flipMap = flip map;
+  # flipMap = flip map;
 }
