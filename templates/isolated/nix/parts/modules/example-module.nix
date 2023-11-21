@@ -1,4 +1,4 @@
-# --- parts/modules/example-module.nix
+# --- nix/parts/modules/example-module.nix
 {
   config,
   lib,

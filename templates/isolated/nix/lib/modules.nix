@@ -1,4 +1,4 @@
-# --- lib/modules.nix
+# --- nix/lib/modules.nix
 {
   lib,
   self,

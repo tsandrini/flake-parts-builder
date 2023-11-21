@@ -1,4 +1,4 @@
-# --- lib/maintainers.nix
+# --- nix/lib/maintainers.nix
 _: {
   # Example maintainer
   # -----------------

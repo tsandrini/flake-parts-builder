@@ -1,4 +1,4 @@
-# --- parts/pkgs/default.nix
+# --- nix/parts/pkgs/default.nix
 {lib, ...}: {
   perSystem = {
     pkgs,

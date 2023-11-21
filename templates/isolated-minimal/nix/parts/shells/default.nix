@@ -1,4 +1,4 @@
-# --- parts/shells/default.nix
+# --- nix/parts/shells/default.nix
 {
   inputs,
   projectPath,

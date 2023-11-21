@@ -1,4 +1,4 @@
-# --- lib/default.nix
+# --- nix/lib/default.nix
 {
   pkgs,
   lib,

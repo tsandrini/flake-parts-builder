@@ -1,4 +1,4 @@
-# --- parts/shells/dev.nix
+# --- nix/parts/shells/dev.nix
 {
   pkgs,
   treefmt,

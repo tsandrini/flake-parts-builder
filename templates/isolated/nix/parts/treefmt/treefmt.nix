@@ -1,4 +1,4 @@
-# --- parts/treefmt/treefmt.nix
+# --- nix/parts/treefmt/treefmt.nix
 {
   pkgs,
   projectPath,

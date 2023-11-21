@@ -1,4 +1,4 @@
-# --- lib/asserts.nix
+# --- nix/lib/asserts.nix
 {lib, ...}:
 with lib;
 with builtins; {

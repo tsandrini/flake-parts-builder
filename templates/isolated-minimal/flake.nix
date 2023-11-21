@@ -15,6 +15,8 @@
       url = "github:nlewo/nix2container";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Project specific dependencies
   };
 
   # Here you can add additional binary cache substituers that you trust

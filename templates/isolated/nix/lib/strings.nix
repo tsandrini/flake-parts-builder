@@ -1,4 +1,4 @@
-# --- lib/strings.nix
+# --- nix/lib/strings.nix
 {lib, ...}:
 with lib;
 with builtins; rec {

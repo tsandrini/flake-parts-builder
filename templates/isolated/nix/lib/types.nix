@@ -1,4 +1,4 @@
-# --- lib/types.nix
+# --- nix/lib/types.nix
 {lib, ...}:
 with lib;
 with builtins;

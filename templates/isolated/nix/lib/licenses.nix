@@ -1,2 +1,2 @@
-# --- lib/licenses.nix
+# --- nix/lib/licenses.nix
 _: {}

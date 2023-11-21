@@ -1,4 +1,4 @@
-# --- parts/pkgs/example-package.nix
+# --- nix/parts/pkgs/example-package.nix
 {
   lib,
   system,

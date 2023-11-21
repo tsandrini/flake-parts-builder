@@ -1,4 +1,4 @@
-# --- parts/hosts/default.nix
+# --- nix/parts/hosts/default.nix
 # {
 #   lib,
 #   inputs,

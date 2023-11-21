@@ -1,4 +1,4 @@
-# --- lib/lists.nix
+# --- nix/lib/lists.nix
 {lib, ...}:
 with lib;
 with builtins; rec {

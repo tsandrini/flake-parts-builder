@@ -1,4 +1,4 @@
-# --- lib/_bootstrap-lib.nix
+# --- nix/lib/_bootstrap-lib.nix
 {lib, ...}:
 with lib;
 with builtins; rec {
