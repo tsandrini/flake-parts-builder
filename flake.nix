@@ -61,6 +61,12 @@
             path = ./templates/isolated-minimal;
             description = "Isolated (./nix) and minimal version of the highly opiniated nix flakes starter template.";
           };
+
+          home = {
+            inherit welcomeText;
+            path = ./templates/home;
+            description = "Full version of the highly opiniated nix flakes starter template that includes prewired home-manager";
+          };
         };
       };
 

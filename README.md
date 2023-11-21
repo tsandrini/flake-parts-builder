@@ -51,6 +51,30 @@ identifier. This can be renamed in the whole project using the script
 rename-project . myAwesomeApp
 ```
 
+You're also encouraged to update your flakes with
+
+```bash
+nix flake update
+```
+
+## Variants
+
+There are also a few other different variants of the base template that may
+be better suited for your needs
+
+- **main**: The main, default template.
+- **home**: Conceptually and structurally the same as the default template, but
+  also includes prepared and preconfigured
+  [home-manager](https://github.com/nix-community/home-manager) as well as
+  examples of how to use it
+- **minimal**: Structurally the same as the default template, but stripped of all
+  of the included examples and additional prepared files
+- **isolated**: Centralizes all of the nix related stuff into a `nix/` folder.
+  This can be useful when you'd like to not pollute your root with stuff not
+  directly tied to the code.
+- **isolated-minimal**: Isolated combined with minimal, that is, structurally the
+  same as minimal, however, stripped out of all the examples and unnecessary code
+
 ## Notes
 
 - `pkgs` are by default enabled to allow **unfree** licenses, if you'd prefer not
