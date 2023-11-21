@@ -10,7 +10,6 @@ stdenv.mkDerivation rec {
   version = "v0.1.0";
 
   src = ./.;
-  dontBuilt = true;
   installPhase = ''
     mkdir -p $out
     echo "Hello, this is an example package" > $out/example.txt

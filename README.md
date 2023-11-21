@@ -43,7 +43,7 @@ After a proper installation process you can enter the development environment
 1. either using [direnv](https://github.com/direnv/direnv) `direnv allow`
 2. or directly `nix develop .#dev --impure`
 
-While not many, the code has some required references to the `practicalFlake`
+While not many, the code has some required references to the `practicalFlakes`
 identifier. This can be renamed in the whole project using the script
 `rename-project` (which is available in the dev environment)
 
