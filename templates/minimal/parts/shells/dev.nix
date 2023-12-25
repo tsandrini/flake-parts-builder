@@ -5,10 +5,6 @@
   ...
 }: {
   packages = with pkgs; [
-    # -- greeting --
-    cowsay
-    fortune
-    lolcat
     # -- nix --
     nil # LSP
     alejandra # formatting
@@ -46,10 +42,7 @@
   };
 
   enterShell = ''
-    echo ""
-    echo "~~ Welcome to the practicalFlakes devshell! ~~
-
-    [Fortune of the Day] $(fortune)" | cowsay -W 120 -T "U " | lolcat -F 0.3 -p 10 -t
-    echo ""
+    # Greeting upon devshell activation
+    echo ""; echo -e "\e[1;37;42mWelcome to the practicalFlakes devshell!\e[0m"; echo ""
   '';
 }
