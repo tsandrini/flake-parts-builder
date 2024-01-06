@@ -1,7 +1,5 @@
 # --- nix/lib/lists.nix
-{lib, ...}:
-with lib;
-with builtins; rec {
+_: {
   # Example function
   # -----------------
   /*

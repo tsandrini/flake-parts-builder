@@ -1,7 +1,7 @@
 # --- lib/attrsets.nix
 {lib, ...}:
 with lib;
-with builtins; rec {
+with builtins; {
   /*
   Apply a map to every attribute of an attrset and then filter the resulting
   attrset based on a given predicate function.

@@ -2,7 +2,6 @@
 {
   lib,
   self,
-  inputs,
   ...
 }: let
   inherit (self.attrsets) mapFilterAttrs;
@@ -50,42 +49,4 @@ in
           else if v == "regular" && n != "default.nix" && hasSuffix ".nix" n
           then nameValuePair (removeSuffix ".nix" n) (fn path)
           else nameValuePair "" null) (readDir dir);
-
-    /*
-    Custom nixpkgs constructor. Its purpose is to import provided nixpkgs
-    while setting the target platform and all over the needed overlays.
-
-    *Type*: `mkNixpkgs :: AttrSet -> String -> [(AttrSet -> AttrSet -> AttrSet)] -> Attrset`
-
-    Example:
-    ```nix title="Example" linenums="1"
-    mkNixpkgs inputs.nixpkgs "x86_64-linux" []
-      => { ... }
-
-    mkNixpkgs inputs.nixpkgs "aarch64-linux" [ (final: prev: {
-      customPkgs = inputs.customPkgs { pkgs = final; };
-    }) ]
-      => { ... }
-    ```
-    */
-    mkNixpkgs =
-      # (AttrSet) Nixpkgs attrset
-      pkgs:
-      # (String) System string identifier (eg: "x86_64-linux", "aarch64-linux", "aarch64-darwin")
-      system:
-      # ([AttrSet -> AttrSet -> AttrSet]) Extra overlays that should be applied to the created pkgs
-      extraOverlays:
-        import pkgs {
-          inherit system;
-          config.allowUnfree = true;
-          hostPlatform = system;
-          overlays = let
-            pkgsOverlay = _final: _prev: {
-              practicalFlakes = inputs.self.packages.${system};
-            };
-          in
-            [pkgsOverlay]
-            ++ (attrValues inputs.self.overlays)
-            ++ extraOverlays;
-        };
   }
