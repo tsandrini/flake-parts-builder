@@ -9,19 +9,21 @@
 #   mkHost = args: hostName: {
 #     extraSpecialArgs ? {},
 #     extraModules ? [],
+#     extraOverlays ? [],
 #   }:
 #     lib.nixosSystem {
-#       inherit (args) system pkgs;
+#       inherit (args) system;
 #       specialArgs =
 #         {
-#           inherit (args) system;
+#           inherit (args) system self' inputs';
 #           inherit inputs lib hostName projectPath;
 #         }
 #         // extraSpecialArgs;
 #       modules =
 #         [
 #           {
-#             nixpkgs.pkgs = lib.mkDefault args.pkgs;
+#             nixpkgs.overlays = extraOverlays;
+#             nixpkgs.config.allowUnfree = true;
 #             networking.hostName = hostName;
 #           }
 #           ./${hostName}
