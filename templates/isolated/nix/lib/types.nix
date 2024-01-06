@@ -1,8 +1,5 @@
 # --- nix/lib/types.nix
-{lib, ...}:
-with lib;
-with builtins;
-with types; {
+_: {
   # Example email type
   # ------------------
   # email =

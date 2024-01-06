@@ -1,7 +1,5 @@
 # --- nix/lib/asserts.nix
-{lib, ...}:
-with lib;
-with builtins; {
+_: {
   # Example assertion
   # -----------------
   # assertModulesLoaded =

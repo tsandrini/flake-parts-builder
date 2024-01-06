@@ -83,9 +83,3 @@ nix flake init -t github:tsandrini/practical-flakes-template#myVariant
 
 For example,
 `nix flake init -t github:tsandrini/practical-flakes-template#isolated-minimal`.
-
-## Notes
-
-- `pkgs` are by default enabled to allow **unfree** licenses, if you'd prefer not
-  to have this enabled, simply remove the line in the `lib/modules.nix:mkNixpkgs`
-  helper function

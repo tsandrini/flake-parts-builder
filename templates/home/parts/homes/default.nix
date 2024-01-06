@@ -5,23 +5,28 @@
 #   projectPath,
 #   withSystem,
 #   self,
-#   config,
 #   ...
 # }: let
 #   mkHome = args: home: {
 #     extraSpecialArgs ? {},
 #     extraModules ? [],
+#     extraOverlays ? [],
+#     ...
 #   }:
 #     inputs.home-manager.lib.homeManagerConfiguration {
 #       inherit (args) pkgs;
 #       extraSpecialArgs =
 #         {
-#           inherit (args) system;
+#           inherit (args) system self' inputs';
 #           inherit inputs home projectPath self;
 #         }
 #         // extraSpecialArgs;
 #       modules =
 #         [
+#           {
+#             nixpkgs.overlays = extraOverlays;
+#             nixpkgs.config.allowUnfree = true;
+#           }
 #           ./${home}
 #         ]
 #         ++ extraModules;

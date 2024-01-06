@@ -2,6 +2,7 @@
 # {
 #   lib,
 #   inputs,
+#   self,
 #   projectPath,
 #   withSystem,
 #   ...
@@ -9,28 +10,57 @@
 #   mkHost = args: hostName: {
 #     extraSpecialArgs ? {},
 #     extraModules ? [],
-#   }:
+#     extraOverlays ? [],
+#     withHomeManager ? false,
+#     ...
+#   }: let
+#     baseSpecialArgs =
+#       {
+#         inherit (args) system self' inputs';
+#         inherit inputs self hostName projectPath;
+#       }
+#       // extraSpecialArgs;
+#   in
 #     lib.nixosSystem {
-#       inherit (args) system pkgs;
+#       inherit (args) system;
 #       specialArgs =
-#         {
-#           inherit (args) system;
-#           inherit inputs lib hostName projectPath;
-#         }
-#         // extraSpecialArgs;
+#         baseSpecialArgs
+#         // {
+#           inherit lib hostName;
+#           host.hostName = hostName;
+#         };
 #       modules =
 #         [
 #           {
-#             nixpkgs.pkgs = lib.mkDefault args.pkgs;
+#             nixpkgs.overlays = extraOverlays;
+#             nixpkgs.config.allowUnfree = true;
 #             networking.hostName = hostName;
 #           }
 #           ./${hostName}
 #         ]
-#         ++ extraModules;
+#         ++ extraModules
+#         ++ (
+#           if withHomeManager
+#           then [
+#             inputs.home-manager.nixosModules.home-manager
+#             {
+#               home-manager = {
+#                 useGlobalPkgs = true;
+#                 useUserPackages = true;
+#                 extraSpecialArgs = baseSpecialArgs;
+#                 sharedModules = [] # TODO: add shared modules here;
+#               };
+#             }
+#           ]
+#           else []
+#         );
 #     };
 # in {
 #   flake.nixosConfigurations = {
-#     # exampleHost = withSystem "x86_64-linux" (args: mkHost args "exampleHost" {});
+#     exampleHost = withSystem "x86_64-linux" (args: mkHost args "exampleHost" {});
+#     anotherExampleHost = withSystem "x86_64-linux" (args: mkHost args "anotherExampleHost" {
+#       withHomeManager = true;
+#     });
 #   };
 # }
 {}

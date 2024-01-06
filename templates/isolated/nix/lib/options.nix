@@ -1,8 +1,5 @@
 # --- nix/lib/options.nix
-{lib, ...}:
-with lib;
-with lib.types;
-with builtins; rec {
+_: {
   # Example function
   # -----------------
   # /*
