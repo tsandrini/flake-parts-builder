@@ -41,7 +41,7 @@
 
   outputs = inputs @ {flake-parts, ...}: let
     inherit (inputs) nixpkgs;
-    inherit (lib.practicalFlakes) mapModules mkNixpkgs flatten;
+    inherit (lib.practicalFlakes) mapModules flatten;
 
     # You should ideally use relative paths in each individual part from ./parts,
     # however, if needed you can use the `projectPath` variable that is passed
@@ -91,15 +91,15 @@
       systems = import inputs.systems;
       flake.lib = lib.practicalFlakes;
 
-      # Finally, we bootstrap the `pkgs` argument to use our custom nixpkgs
-      # instance bootstrapped with overlays, loaded system and other defaults.
-      # For more info refer to `lib/modules.nix:mkNixpkgs`
-      perSystem = {
-        system,
-        pkgs,
-        ...
-      }: {
-        _module.args.pkgs = mkNixpkgs nixpkgs system [];
-      };
+      # Since the official flakes output schema is unfortunately very limited
+      # you can enable the debug mode if you need to inspect certain outputs
+      # of your flake. Simply
+      #
+      # 1. uncomment the following line
+      # 2. hop into a repl from the project root - `nix repl`
+      # 3. load the flake - `:lf .`
+      #
+      # After that you can inspect the flake from the root attribute `debug.flake`
+      # debug = true;
     };
 }
