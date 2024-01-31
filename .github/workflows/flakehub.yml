@@ -1,4 +1,4 @@
-name: "Publish every Git push to master to FlakeHub"
+name: "FlakeHub"
 on:
   push:
     branches:
@@ -10,9 +10,9 @@ jobs:
       id-token: "write"
       contents: "read"
     steps:
-      - uses: "actions/checkout@v3"
-      - uses: "DeterminateSystems/nix-installer-action@main"
-      - uses: "DeterminateSystems/flakehub-push@main"
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/flakehub-push@main
         with:
           name: "tsandrini/practical-flakes-template"
           rolling: true

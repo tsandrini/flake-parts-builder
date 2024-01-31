@@ -1,5 +1,8 @@
 # practical-flakes-template
 
+[![flake check](https://github.com/tsandrini/practical-flakes-template/actions/workflows/check-on-merge.yml/badge.svg)](https://github.com/tsandrini/practical-flakes-template/actions/workflows/check-on-merge.yml)
+[![FlakeHub](https://github.com/tsandrini/practical-flakes-template/actions/workflows/flakehub.yml/badge.svg)](https://github.com/tsandrini/practical-flakes-template/actions/workflows/flakehub.yml)
+
 ## Description
 
 _PracticalFlakes_ are a set of highly opinionated templates to quickly bootstrap

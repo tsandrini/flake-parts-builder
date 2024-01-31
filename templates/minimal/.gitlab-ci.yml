@@ -8,7 +8,6 @@ before_script:
 
 check:
   script:
-    - nix develop .#dev --impure --command bash -c "pre-commit run --all-files"
-    - nix develop .#dev --impure --command bash -c "nix flake check --impure --show-trace"
+    - nix flake check --impure --show-trace --accept-flake-config
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
