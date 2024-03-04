@@ -1,0 +1,22 @@
+name: "FlakeHub"
+on:
+  push:
+    branches:
+      - "main"
+jobs:
+  flakehub-publish:
+    if: false # NOTE: Comment out this line to enable flakehub
+    runs-on: "ubuntu-latest"
+    permissions:
+      id-token: "write"
+      contents: "read"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - uses: DeterminateSystems/flakehub-push@main
+        with:
+          name: "organization/repository" # TODO: add info
+          rolling: true
+          visibility: "public"
