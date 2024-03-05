@@ -4,31 +4,48 @@
   treefmt,
   ...
 }: {
+  # Some sensible defaults for a seamless initial experience have been set,
+  # however, feel free to modify anything you'd like.
+
   packages = with pkgs; [
-    # -- nix --
-    nil # LSP
-    alejandra # formatting
-    statix # static code analysis
-    deadnix # find dead nix code
-    nix-output-monitor # readable derivation outputs
-    # -- misc --
-    markdownlint-cli # markdown linting
-    nodePackages.prettier
-    treefmt
+    # -- NIX UTILS --
+    nil # Yet another language server for Nix
+    alejandra # The Uncompromising Nix Code Formatter
+    statix # Lints and suggestions for the nix programming language
+    deadnix # Find and remove unused code in .nix source files
+    nix-output-monitor # Processes output of Nix commands to show helpful and pretty information
+
+    # -- GIT RELATED UTILS --
+    # commitizen # Tool to create committing rules for projects, auto bump versions, and generate changelogs
+    # cz-cli # The commitizen command line utility
+    # fh # The official FlakeHub CLI
+    # gh # GitHub CLI tool
+
+    # -- LANGUAGE RELATED UTILS --
+    markdownlint-cli # Command line interface for MarkdownLint
+    nodePackages.prettier # Prettier is an opinionated code formatter
+    typos # Source code spell checker
+    treefmt # one CLI to format the code tree
+
+    # -- NIXOS UTILS --
+    nh # Yet another nix cli helper
   ];
 
   languages.nix.enable = true;
   difftastic.enable = true;
-  devcontainer.enable = true; # if anyone needs it
+  devcontainer.enable = true;
   devenv.flakesIntegration = true;
 
   pre-commit = {
     hooks = {
       treefmt.enable = true;
+
       # Everything below is stuff that is missing from treefmt
       nil.enable = true;
       markdownlint.enable = true;
-      actionlint.enable = true;
+      typos.enable = true;
+      # actionlint.enable = true; # GitHub workflows linting
+      # commitizen.enable = true; # Enable if using commitizen
     };
     settings = {
       treefmt.package = treefmt;

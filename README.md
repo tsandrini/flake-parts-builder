@@ -33,6 +33,10 @@ And you're good to go! 👍
    to rule them all 🙏
 4. Already preconfigured [github actions](https://docs.github.com/en/actions)
    and [gitlab CI](https://docs.gitlab.com/ee/ci/) 💪
+   - automatic `nix flake check` on pull/merge requests
+   - automatic nixpkgs flake inputs checker (github only)
+   - automatic cron based flake inputs updates (github only)
+   - (optional) push to [FlakeHub](https://flakehub.com/)
 5. Prepared for custom `lib` overrides 🤓
    - depending on what you're currently aiming to write, you might need some
      custom helpers or library functions, this template

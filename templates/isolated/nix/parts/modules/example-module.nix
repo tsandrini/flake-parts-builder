@@ -1,5 +1,5 @@
 # --- nix/parts/modules/example-module.nix
-{
+{localFlake}: {
   config,
   lib,
   pkgs,
@@ -7,13 +7,12 @@
 }:
 with builtins;
 with lib; let
-  inherit (practicalFlakes.modules) mkOverrideAtModuleLevel;
+  inherit (localFlake.lib) mkOverrideAtModuleLevel;
 
   cfg = config.practicalFlakes.example-module;
   _ = mkOverrideAtModuleLevel;
 in {
-  options.practicalFlakes.example-module = with types;
-  with practicalFlakes.types; {
+  options.practicalFlakes.example-module = with types; {
     enable = mkEnableOption (mdDoc ''
       Enable the NixOS example module that enables neovim and installs git
     '');
@@ -33,5 +32,5 @@ in {
     # |----------------------------------------------------------------------| #
   ]);
 
-  meta.maintainers = with practicalFlakes.maintainers; [];
+  meta.maintainers = with localFlake.lib.maintainers; [];
 }
