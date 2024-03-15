@@ -1,19 +1,19 @@
 # --- nix/parts/shells/dev.nix
+{ pkgs, treefmt, ... }:
 {
-  pkgs,
-  treefmt,
-  ...
-}: {
   # Some sensible defaults for a seamless initial experience have been set,
   # however, feel free to modify anything you'd like.
 
   packages = with pkgs; [
     # -- NIX UTILS --
     nil # Yet another language server for Nix
-    alejandra # The Uncompromising Nix Code Formatter
     statix # Lints and suggestions for the nix programming language
     deadnix # Find and remove unused code in .nix source files
     nix-output-monitor # Processes output of Nix commands to show helpful and pretty information
+    nixfmt-rfc-style # An opinionated formatter for Nix
+    # NOTE Choose a different formatter if you'd like to
+    # nixfmt # An opinionated formatter for Nix
+    # alejandra # The Uncompromising Nix Code Formatter
 
     # -- GIT RELATED UTILS --
     # commitizen # Tool to create committing rules for projects, auto bump versions, and generate changelogs

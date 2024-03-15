@@ -18,7 +18,7 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Example package";
     license = licenses.mit;
-    platforms = [system];
-    maintainers = [];
+    platforms = [ system ];
+    maintainers = [ ];
   };
 }

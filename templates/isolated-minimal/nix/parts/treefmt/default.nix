@@ -1,12 +1,11 @@
 # --- nix/parts/treefmt/default.nix
+{ projectPath, inputs, ... }:
 {
-  projectPath,
-  inputs,
-  ...
-}: {
-  imports = with inputs; [treefmt-nix.flakeModule];
+  imports = with inputs; [ treefmt-nix.flakeModule ];
 
-  perSystem = {pkgs, ...}: {
-    treefmt = import ./treefmt.nix {inherit pkgs projectPath;};
-  };
+  perSystem =
+    { pkgs, ... }:
+    {
+      treefmt = import ./treefmt.nix { inherit pkgs projectPath; };
+    };
 }

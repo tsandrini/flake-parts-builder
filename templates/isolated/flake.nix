@@ -35,29 +35,35 @@
     ];
   };
 
-  outputs = inputs @ {flake-parts, ...}: let
-    inherit (inputs) nixpkgs;
-    inherit (lib.practicalFlakes) mapModules flatten;
+  outputs =
+    inputs@{ flake-parts, ... }:
+    let
+      inherit (inputs) nixpkgs;
+      inherit (lib.practicalFlakes) mapModules flatten;
 
-    # You should ideally use relative paths in each individual part from ./parts,
-    # however, if needed you can use the `projectPath` variable that is passed
-    # to every flakeModule to properly anchor your absolute paths.
-    projectPath = ./.;
+      # You should ideally use relative paths in each individual part from ./parts,
+      # however, if needed you can use the `projectPath` variable that is passed
+      # to every flakeModule to properly anchor your absolute paths.
+      projectPath = ./.;
 
-    # We extend the base <nixpkgs> library with our own custom helpers as well
-    # as override any of the nixpkgs default functions that we'd like
-    # to override. This instance is then passed to every part in ./parts so that
-    # you can use it in your custom modules
-    lib = nixpkgs.lib.extend (self: _super: {
-      practicalFlakes = import ./nix/lib {
-        inherit inputs projectPath;
-        pkgs = nixpkgs;
-        lib = self;
+      # We extend the base <nixpkgs> library with our own custom helpers as well
+      # as override any of the nixpkgs default functions that we'd like
+      # to override. This instance is then passed to every part in ./parts so that
+      # you can use it in your custom modules
+      lib = nixpkgs.lib.extend (
+        self: _super: {
+          practicalFlakes = import ./nix/lib {
+            inherit inputs projectPath;
+            pkgs = nixpkgs;
+            lib = self;
+          };
+        }
+      );
+      specialArgs = {
+        inherit lib projectPath;
       };
-    });
-    specialArgs = {inherit lib projectPath;};
-  in
-    flake-parts.lib.mkFlake {inherit inputs specialArgs;} {
+    in
+    flake-parts.lib.mkFlake { inherit inputs specialArgs; } {
       # We recursively traverse all of the flakeModules in ./parts and import only
       # the final modules, meaning that you can have an arbitrary nested structure
       # that suffices your needs. For example
