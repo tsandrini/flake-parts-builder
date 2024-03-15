@@ -1,13 +1,11 @@
 # --- parts/modules/nixos/default.nix
-{
-  inputs,
-  self,
-  ...
-}: let
+{ inputs, self, ... }:
+let
   inherit (inputs.flake-parts.lib) importApply;
   localFlake = self;
-in {
+in
+{
   flake.nixosModules = {
-    example-module = importApply ./example-module.nix {inherit localFlake;};
+    example-module = importApply ./example-module.nix { inherit localFlake; };
   };
 }

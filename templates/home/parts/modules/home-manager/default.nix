@@ -4,16 +4,18 @@
   self,
   lib,
   ...
-}: let
+}:
+let
   inherit (inputs.flake-parts.lib) importApply;
   localFlake = self;
-in {
+in
+{
   options.flake.homeModules = lib.mkOption {
     type = with lib.types; lazyAttrsOf unspecified;
-    default = {};
+    default = { };
   };
 
   config.flake.homeModules = {
-    example-module = importApply ./example-module.nix {inherit localFlake;};
+    example-module = importApply ./example-module.nix { inherit localFlake; };
   };
 }
