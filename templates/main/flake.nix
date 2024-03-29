@@ -2,24 +2,28 @@
   description = "practicalFlakes - TODO Add a description of your new project";
 
   inputs = {
-    # Base dependencies
+    # --- BASE DEPENDENCIES ---
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     systems.url = "github:nix-systems/default";
 
-    # Development (devenv and treefmt dependencies)
-    treefmt-nix.url = "github:numtide/treefmt-nix";
+    # --- DEV DEPENDENCIES ---
     devenv.url = "github:cachix/devenv";
+    devenv-root = {
+      url = "file+file:///dev/null";
+      flake = false;
+    };
     mk-shell-bin.url = "github:rrbutani/nix-mk-shell-bin";
     nix2container = {
       url = "github:nlewo/nix2container";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    treefmt-nix.url = "github:numtide/treefmt-nix";
 
-    # Project specific dependencies
+    # --- (NOTE, YOUR) EXTRA DEPENDENCIES ---
   };
 
-  # Here you can add additional binary cache substituers that you trust.
+  # NOTE Here you can add additional binary cache substituers that you trust.
   # There are also some sensible default caches commented out that you
   # might consider using.
   nixConfig = {
@@ -86,22 +90,21 @@
       #    - mySimpleModule.nix
       imports = flatten (mapModules ./parts (x: x));
 
-      # We use the default `systems` defined by the `nix-systems` flake, if you
-      # need any additional systems, simply add them in the following manner
+      # NOTE We use the default `systems` defined by the `nix-systems` flake, if
+      # you need any additional systems, simply add them in the following manner
       #
       # `systems = (import inputs.systems) ++ [ "armv7l-linux" ];`
       systems = import inputs.systems;
       flake.lib = lib.practicalFlakes;
 
-      # Since the official flakes output schema is unfortunately very limited
-      # you can enable the debug mode if you need to inspect certain outputs
-      # of your flake. Simply
-      #
+      # NOTE Since the official flakes output schema is unfortunately very
+      # limited you can enable the debug mode if you need to inspect certain
+      # outputs of your flake. Simply
       # 1. uncomment the following line
       # 2. hop into a repl from the project root - `nix repl`
       # 3. load the flake - `:lf .`
-      #
       # After that you can inspect the flake from the root attribute `debug.flake`
+      #
       # debug = true;
     };
 }
