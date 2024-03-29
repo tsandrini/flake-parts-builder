@@ -109,6 +109,10 @@
           };
 
           devenv.shells.dev = {
+
+            # Needed for devenv to run in pure mode
+            devenv.root = builtins.toString ./.;
+
             packages = with pkgs; [
               # -- NIX UTILS --
               nil # Yet another language server for Nix
