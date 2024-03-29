@@ -27,28 +27,27 @@ And you're good to go! 👍
      [NixOS modules](https://nixos.wiki/wiki/NixOS_Modules),
      [home-manager](https://github.com/nix-community/home-manager) userspace,
      you can always use the same underlying structure
-2. [devenv.sh](https://github.com/cachix/devenv) is awesome! 🔥
+1. [devenv.sh](https://github.com/cachix/devenv) is awesome! 🔥
    - includes a devenv shell already preconfigured to format and lint nix
-3. [treefmt](https://github.com/numtide/treefmt) is the one and only formatter
+1. [treefmt](https://github.com/numtide/treefmt) is the one and only formatter
    to rule them all 🙏
-4. Already preconfigured [github actions](https://docs.github.com/en/actions)
+1. Already preconfigured [github actions](https://docs.github.com/en/actions)
    and [gitlab CI](https://docs.gitlab.com/ee/ci/) 💪
    - automatic `nix flake check` on pull/merge requests
    - automatic nixpkgs flake inputs checker (github only)
    - automatic cron based flake inputs updates (github only)
    - (optional) push to [FlakeHub](https://flakehub.com/)
-5. Prepared for custom `lib` overrides 🤓
+1. Prepared for custom `lib` overrides 🤓
    - depending on what you're currently aiming to write, you might need some
      custom helpers or library functions, this template
      already set ups all the necessary boilerplate to get it all going
-6. And finally, examples included 🖌️
+1. And finally, examples included 🖌️
 
 ## Usage
 
 After a proper installation process you can enter the development environment
-
-1. either using [direnv](https://github.com/direnv/direnv) `direnv allow`
-2. or directly `nix develop .#dev --impure`
+with `direnv allow` (or alternatively
+`nix develop .#dev --override-input devenv-root "file+file://"<(printf %s "$PWD")`)
 
 While not many, the code has some required references to the `practicalFlakes`
 identifier. This can be renamed in the whole project using the script

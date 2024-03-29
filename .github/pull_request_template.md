@@ -27,13 +27,15 @@ updates (if applicable). -->
 
 <!-- Ensure you've gone through this checklist before submitting your PR. -->
 
-- [ ] I have tested the relevant changes locally.
-- [ ] I have checked that `nix flake check --impure` passes.
-- [ ] I have ensured my commits follow the project's conventional commits guidelines.
-- [ ] I have checked that the changes follow a linear history.
-- [ ] (If applicable) I have commented any relevant parts of my code.
-- [ ] (If applicable) I have added appropriate unit/feature tests.
-- [ ] (If applicable) I have updated the documentation accordingly (in English).
+- \[ \] I have tested the relevant changes locally.
+- \[ \] I have checked that
+  `nix flake check --override-input devenv-root "file+file://"<(printf %s "$PWD")`
+  passes.
+- \[ \] I have ensured my commits follow the project's conventional commits guidelines.
+- \[ \] I have checked that the changes follow a linear history.
+- \[ \] (If applicable) I have commented any relevant parts of my code.
+- \[ \] (If applicable) I have added appropriate unit/feature tests.
+- \[ \] (If applicable) I have updated the documentation accordingly (in English).
 
 ## Additional Notes
 
