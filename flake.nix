@@ -190,6 +190,9 @@
             pre-commit = {
               hooks = {
                 treefmt.enable = true;
+                # We pass our custom treefmt build from parts/treefmt/treefmt.nix for
+                # devenv to use.
+                treefmt.package = config.treefmt.build.wrapper;
 
                 nil.enable = true; # Nix Language server, an incremental analysis assistant for writing in Nix.
                 markdownlint.enable = true; # Markdown lint tool
@@ -198,11 +201,6 @@
 
                 actionlint.enable = true; # GitHub workflows linting
                 commitizen.enable = true; # Commitizen is release management tool designed for teams.
-              };
-              settings = {
-                # We pass our custom treefmt build from parts/treefmt/treefmt.nix for
-                # devenv to use.
-                treefmt.package = config.treefmt.build.wrapper;
               };
             };
 
