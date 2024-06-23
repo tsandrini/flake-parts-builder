@@ -54,26 +54,32 @@
         {
 
           packages = rec {
-            # builder =
             default = builder;
 
             builder = pkgs.rustPlatform.buildRustPackage {
               name = "flake-parts-builder";
               version = "1.0.0";
 
-              src = ./.;
+              src = builtins.path {
+                path = ./.;
+                filter = path: type: !(builtins.elem (/. + path) [ ./parts ]);
+              };
 
-              nativeBuildInputs = with pkgs; [ pkg-config ];
-              buildInputs = with pkgs; [ openssl ];
+              cargoSha256 = "sha256-6rVpTWcGX+sNCEq14AEkqC8Ui+tnso50ZXMv28evMxg=";
 
-              cargoSha256 = "sha256-N/nUBwSVGBotGuAXw1ywxQpgssT+9So6g2eeEZ6dIZA=";
+              # TODO test that it does the thing
+              buildInputs = with pkgs; [
+                rsync
+                jq
+              ];
             };
 
             parts = pkgs.stdenv.mkDerivation {
               name = "parts";
               version = "1.0.0";
-              src = ./assets/parts;
+              src = ./parts;
 
+              dontConfigure = true;
               dontBuild = true;
 
               installPhase = ''

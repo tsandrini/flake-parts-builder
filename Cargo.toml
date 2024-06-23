@@ -2,8 +2,13 @@
 name = "flake-parts-builder"
 version = "1.0.0"
 edition = "2021"
+authors = ["Tomáš Sandrini"]
+repository = "https://github.com/tsandrini/flake-parts-builder"
+license = "MIT"
 
 [dependencies]
-clap = { version = "4.5.7", features = ["cargo"] }
+clap = { version = "4.5.7", features = ["cargo", "derive"] }
+serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
+tempfile = "3.10.1"
 tinytemplate = "1.2.1"
