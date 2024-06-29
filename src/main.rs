@@ -82,9 +82,14 @@ fn init(mut cmd: InitCommand) -> Result<()> {
     let stores: Vec<FlakePartsStore> = cmd
         .parts_stores
         .iter()
-        .map(|store| FlakePartsStore::from_flake_uri(store.clone()))
-        .collect::<Result<Vec<FlakePartsStore>>>()?;
+        .map(|store| FlakePartsStore::from_flake_uri(&store))
+        .collect::<Result<Vec<FlakePartsStore>, FlakePartsStoreParseError>>()?;
 
+    // NOTE
+    // 1. convert cmd.parts to actual parts
+    // 2. start iterating over actual parts and building
+    //    a. create a tmpdir
+    //    b.
     println!("{:?}", cmd.path.file_name());
 
     let mut tt = TinyTemplate::new();
@@ -112,7 +117,7 @@ fn list(mut cmd: ListCommand) -> Result<()> {
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
         writeln!(&mut stdout, " # {}", flake_uri)?;
 
-        FlakePartsStore::from_flake_uri(flake_uri.clone())
+        FlakePartsStore::from_flake_uri(&flake_uri)
             .unwrap()
             .parts
             .iter()
