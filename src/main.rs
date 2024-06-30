@@ -1,21 +1,17 @@
 use anyhow::Result;
-// use std::{error::Error, fmt::write};
-
-use serde::Serialize;
+use clap::{Args, Parser, Subcommand};
+use minijinja::{context, Environment};
+use std::io::Write;
 use std::path::PathBuf;
 use tempfile::tempdir;
-use tinytemplate::TinyTemplate;
-
-use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
-
-use clap::{Args, Parser, Subcommand};
 
 mod parts;
 use parts::*;
 
 static FLAKE_TEMPLATE: &'static str = include_str!("assets/flake.nix.template");
-static SELF_FLAKE_URI: &'static str = "github:tsandrini/flake-parts-builder";
+// static SELF_FLAKE_URI: &'static str = "github:tsandrini/flake-parts-builder";
+static SELF_FLAKE_URI: &'static str = "."; // TODO only for dev
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -63,27 +59,45 @@ enum Commands {
 
     /// List all available flake-parts
     List(ListCommand),
-}
-
-#[derive(Serialize)]
-struct Context {
-    inputs: String,
-    extra_trusted_public_keys: String,
-    extra_substituters: String,
+    // TODO add a command to add a new part
 }
 
 fn init(mut cmd: InitCommand) -> Result<()> {
-    let target = tempdir()?;
+    // let target = tempdir()?;
 
     if !cmd.disable_base_parts {
         cmd.parts_stores.push(format!("{}#parts", SELF_FLAKE_URI));
     }
 
-    let stores: Vec<FlakePartsStore> = cmd
+    // NOTE this one is required even if you disable this parts store
+    cmd.parts.push(format!("{}#parts/_base", SELF_FLAKE_URI));
+
+    let parts_flake_uri = cmd
+        .parts
+        .into_iter()
+        .map(|part| {
+            if part.contains('#') {
+                part
+            } else {
+                format!("{}#parts/{}", SELF_FLAKE_URI, part)
+            }
+        })
+        .collect::<Vec<_>>();
+
+    println!("parts flake uri: {:?}", parts_flake_uri);
+
+    let out_parts = cmd
         .parts_stores
         .iter()
         .map(|store| FlakePartsStore::from_flake_uri(&store))
-        .collect::<Result<Vec<FlakePartsStore>, FlakePartsStoreParseError>>()?;
+        .collect::<Result<Vec<FlakePartsStore>, FlakePartsStoreParseError>>()?
+        .into_iter()
+        .map(|store| store.parts)
+        .flatten()
+        .filter(|part| parts_flake_uri.contains(&part.flake_uri))
+        .collect::<Vec<FlakePart>>();
+
+    println!("out parts: {:?}", out_parts);
 
     // NOTE
     // 1. convert cmd.parts to actual parts
@@ -92,14 +106,21 @@ fn init(mut cmd: InitCommand) -> Result<()> {
     //    b.
     println!("{:?}", cmd.path.file_name());
 
-    let mut tt = TinyTemplate::new();
-    tt.add_template("flake.nix", FLAKE_TEMPLATE)?;
+    let mut env = Environment::new();
+    env.add_template("flake.nix", &FLAKE_TEMPLATE).unwrap();
+    let tmpl = env.get_template("flake.nix").unwrap();
+    println!(
+        "{}",
+        tmpl.render(context!(
+            context => FlakeContext {
+                inputs: Default::default(),
+                extra_trusted_public_keys: vec![String::from("haha"), String::from("hehe")],
+                extra_substituters: Default::default(),
+            }
+        ))
+        .unwrap()
+    );
 
-    let context = Context {
-        inputs: "".to_string(),
-        extra_trusted_public_keys: "".to_string(),
-        extra_substituters: "".to_string(),
-    };
     // let rendered = tt.render("flake.nix", &context)?;
     // println!("{}", rendered);
 
@@ -123,8 +144,11 @@ fn list(mut cmd: ListCommand) -> Result<()> {
             .iter()
             .try_for_each(|part| {
                 stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)))?;
+
                 write!(&mut stdout, "  - {}: ", part.short_name)?;
+
                 stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
+
                 writeln!(&mut stdout, "{}", part.metadata.description)?;
 
                 Ok(()) as Result<()>
@@ -138,6 +162,7 @@ fn list(mut cmd: ListCommand) -> Result<()> {
 // TODO add logging
 // TODO add tests
 // TODO better docs
+// TODO constructors?
 fn main() -> Result<()> {
     let cli = Cli::parse();
 

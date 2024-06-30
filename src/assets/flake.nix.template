@@ -1,44 +1,50 @@
 # --- flake.nix
-\{
+{
   description = "NAMEPLACEHOLDER - TODO Add a description of your new project";
 
-  inputs = \{
+  inputs = {
     # --- BASE DEPENDENCIES ---
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    flake-parts-builder.url = "github:tsandrini/flake-parts-builder";
 
     # --- YOUR DEPENDENCIES ---
-
-{ inputs }
   };
 
   # NOTE Here you can add additional binary cache substituers that you trust.
   # There are also some sensible default caches commented out that you
   # might consider using.
-  nixConfig = \{
+  nixConfig = {
     extra-trusted-public-keys = [
       # "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
       # "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-{ extra_trusted_public_keys }
+      {% if context.extra_trusted_public_keys -%}
+      {% for key in context.extra_trusted_public_keys -%}
+      # "{{ key }}"
+      {% endfor -%}
+      {%- endif %}
     ];
     extra-substituters = [
       # "https://cache.nixos.org"
       # "https://nix-community.cachix.org/"
-{ extra_substituters }
+      {% if context.extra_substituters -%}
+      {% for substituter in context.extra_substituters -%}
+      # "{{ substituter }}"
+      {% endfor -%}
+      {%- endif %}
     ];
   };
 
   outputs =
-    inputs@\{ flake-parts, ... }:
+    inputs@{ flake-parts, ... }:
     let
-      inherit (inputs.flake-parts-builder.lib) loadParts;
+      inherit (inputs.nixpkgs) lib;
+      inherit (import ./flake-parts/_bootstrap-parts.nix { lib }) loadParts;
     in
-    flake-parts.lib.mkFlake \{ inherit inputs; } \{
+    flake-parts.lib.mkFlake { inherit inputs; } {
 
-      # We recursively traverse all of the flakeModules in ./parts and import only
-      # the final modules, meaning that you can have an arbitrary nested structure
-      # that suffices your needs. For example
+      # We recursively traverse all of the flakeModules in ./flake-parts and
+      # import only the final modules, meaning that you can have an arbitrary
+      # nested structure that suffices your needs. For example
       #
       # - ./parts
       #   - modules/
@@ -56,6 +62,6 @@
       #      - myPackage2.nix
       #      - default.nix
       #    - mySimpleModule.nix
-      imports = loadParts ./parts;
+      imports = loadParts ./flake-parts;
     };
 }

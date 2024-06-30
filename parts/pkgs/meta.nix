@@ -1,11 +1,8 @@
-{ pkgs, ... }: {
-    description = "Pkgs flake-part";
+_: {
+  description = "Sets up structure for custom derivations (packages).";
 
-    inputs = {
-    };
-
-    dependencies = [];
-    conflicts = [];
-    extraTrustedPublicKeys = [];
-    extraSubstituters = [];
+  inputs = {  };
+  extraTrustedPublicKeys = [ ];
+  extraSubstituters = [ ];
+  gitignore = [ ];
 }

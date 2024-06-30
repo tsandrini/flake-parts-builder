@@ -1,13 +1,11 @@
-{ pkgs, ... }: {
-    description = "Systems flake-part";
+_: {
+  description = "Sets up the default `systems` of flake-parts";
 
-    inputs = {
-        something = "github:test/test";
-        eh = pkgs.python3;
-    };
+  inputs = {
+    systems.url = "github:nix-systems/default";
+  };
 
-    dependencies = [];
-    conflicts = [];
-    extraTrustedPublicKeys = [];
-    extraSubstituters = [];
+  extraTrustedPublicKeys = [ ];
+  extraSubstituters = [ ];
+  gitignore = [ ];
 }

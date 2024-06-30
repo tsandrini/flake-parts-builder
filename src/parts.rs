@@ -9,7 +9,7 @@ use thiserror::Error;
 
 #[derive(Debug)]
 pub struct FlakePart {
-    flake_uri: String,
+    pub flake_uri: String,
     pub short_name: String,
     nix_store_path: PathBuf,
     pub metadata: FlakePartMetadata,
@@ -17,28 +17,38 @@ pub struct FlakePart {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FlakePartMetadata {
+    #[serde(default)]
     pub description: String,
+
+    #[serde(default)]
     inputs: JsonValue,
+
+    #[serde(default)]
     dependencies: Vec<String>,
+
+    #[serde(default)]
     conflicts: Vec<String>,
 
-    #[serde(rename = "extraTrustedPublicKeys")]
+    #[serde(rename = "extraTrustedPublicKeys", default)]
     extra_trusted_public_keys: Vec<String>,
 
-    #[serde(rename = "extraSubstituters")]
+    #[serde(rename = "extraSubstituters", default)]
     extra_substituters: Vec<String>,
+
+    #[serde(default)]
+    gitignore: Vec<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct FlakeContext {
     pub inputs: JsonValue,
-    extra_trusted_public_keys: Vec<String>,
-    extra_substituters: Vec<String>,
+    pub extra_trusted_public_keys: Vec<String>,
+    pub extra_substituters: Vec<String>,
 }
 
 #[derive(Debug)]
 pub struct FlakePartsStore {
-    flake_uri: String,
+    pub flake_uri: String,
     nix_store_path: PathBuf,
     pub parts: Vec<FlakePart>,
 }

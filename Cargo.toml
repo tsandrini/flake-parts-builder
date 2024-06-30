@@ -9,9 +9,9 @@ license = "MIT"
 [dependencies]
 anyhow = "1.0.86"
 clap = { version = "4.5.7", features = ["cargo", "derive"] }
+minijinja = "2.0.2"
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
 tempfile = "3.10.1"
 termcolor = "1.4.1"
 thiserror = "1.0.61"
-tinytemplate = "1.2.1"
