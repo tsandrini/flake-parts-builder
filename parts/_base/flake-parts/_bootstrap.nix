@@ -1,4 +1,4 @@
-# --- flake-parts/_bootstrap-parts.nix
+# --- flake-parts/_bootstrap.nix
 { lib }:
 rec {
   # TODO add docs

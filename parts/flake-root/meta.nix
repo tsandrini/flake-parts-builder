@@ -1,5 +1,5 @@
 _: {
-  description = "Provides basic structures and helper generators for NixOS hosts.";
+  description = "Provides `config.flake-root` variable pointing to the root of the flake project.";
 
   inputs = { };
   extraTrustedPublicKeys = [ ];
