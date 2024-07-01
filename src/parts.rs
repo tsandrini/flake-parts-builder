@@ -178,7 +178,7 @@ impl FlakePartsStore {
         let output = String::from_utf8(nix_info.stdout)
             .map_err(|e| FlakePartsStoreParseError::NixBuildUTF8Error(e))?;
 
-        let parts = fs::read_dir(format!("{}/parts", output.trim()))?
+        let parts = fs::read_dir(format!("{}/flake-parts", output.trim()))?
             .map(|entry| {
                 let entry = entry?;
 

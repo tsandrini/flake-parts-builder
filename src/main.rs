@@ -33,7 +33,7 @@ struct InitCommand {
     parts: Vec<String>,
 
     /// Additional parts templates stores to load
-    #[arg(short = 'S', long)]
+    #[arg(short = 'S', long = "stores")]
     parts_stores: Vec<String>,
 
     /// Disable base parts provided by this flake
@@ -44,7 +44,7 @@ struct InitCommand {
 #[derive(Debug, Args)]
 struct ListCommand {
     /// Additional parts templates stores to load
-    #[arg(short = 'S', long)]
+    #[arg(short = 'S', long = "stores")]
     parts_stores: Vec<String>,
 
     /// Disable base parts provided by this flake
@@ -66,11 +66,13 @@ fn init(mut cmd: InitCommand) -> Result<()> {
     // let target = tempdir()?;
 
     if !cmd.disable_base_parts {
-        cmd.parts_stores.push(format!("{}#parts", SELF_FLAKE_URI));
+        cmd.parts_stores
+            .push(format!("{}#flake-parts", SELF_FLAKE_URI));
     }
 
     // NOTE this one is required even if you disable this parts store
-    cmd.parts.push(format!("{}#parts/_base", SELF_FLAKE_URI));
+    cmd.parts
+        .push(format!("{}#flake-parts/_base", SELF_FLAKE_URI));
 
     let parts_flake_uri = cmd
         .parts
@@ -79,7 +81,7 @@ fn init(mut cmd: InitCommand) -> Result<()> {
             if part.contains('#') {
                 part
             } else {
-                format!("{}#parts/{}", SELF_FLAKE_URI, part)
+                format!("{}#flake-parts/{}", SELF_FLAKE_URI, part)
             }
         })
         .collect::<Vec<_>>();
@@ -129,7 +131,8 @@ fn init(mut cmd: InitCommand) -> Result<()> {
 
 fn list(mut cmd: ListCommand) -> Result<()> {
     if !cmd.disable_base_parts {
-        cmd.parts_stores.push(format!("{}#parts", SELF_FLAKE_URI));
+        cmd.parts_stores
+            .push(format!("{}#flake-parts", SELF_FLAKE_URI));
     }
 
     let mut stdout = StandardStream::stdout(ColorChoice::Auto);

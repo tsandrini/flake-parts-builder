@@ -62,7 +62,7 @@
 
               src = builtins.path {
                 path = ./.;
-                filter = path: type: !(builtins.elem (/. + path) [ ./parts ]);
+                filter = path: type: !(builtins.elem (/. + path) [ ./flake-parts ]);
               };
 
               cargoSha256 = "sha256-6rVpTWcGX+sNCEq14AEkqC8Ui+tnso50ZXMv28evMxg=";
@@ -74,17 +74,17 @@
               ];
             };
 
-            parts = pkgs.stdenv.mkDerivation {
-              name = "parts";
+            flake-parts = pkgs.stdenv.mkDerivation {
+              name = "flake-parts";
               version = "1.0.0";
-              src = ./parts;
+              src = ./flake-parts;
 
               dontConfigure = true;
               dontBuild = true;
 
               installPhase = ''
-                mkdir -p $out/parts
-                cp -rv $src/* $out/parts
+                mkdir -p $out/flake-parts
+                cp -rv $src/* $out/flake-parts
               '';
 
               meta = with pkgs.lib; {
