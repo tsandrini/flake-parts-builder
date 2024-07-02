@@ -10,5 +10,4 @@ _: {
   conflicts = [ ];
   extraTrustedPublicKeys = [ ];
   extraSubstituters = [ ];
-  gitignore = [ ];
 }

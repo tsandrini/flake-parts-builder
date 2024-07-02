@@ -4,5 +4,4 @@ _: {
   inputs = {  };
   extraTrustedPublicKeys = [ ];
   extraSubstituters = [ ];
-  gitignore = [ ];
 }

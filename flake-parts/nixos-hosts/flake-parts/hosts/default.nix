@@ -41,9 +41,7 @@ let
         # NOTE You can also load all of your defined modules in the
         # following manner
         #
-        # ++ (lib.optional (lib.hasAttr "nixosModules" config.flake) (
-        #   lib.attrValues config.flake.nixosModules
-        # ))
+        # ++ (lib.attrValues config.flake.nixosModules)
         ++ (
           if (withHomeManager && (lib.hasAttr "home-manager" inputs)) then
             [

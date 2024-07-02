@@ -1,8 +1,7 @@
 _: {
-  description = "Structures for custom NixOS modules.";
+  description = "lib";
 
   inputs = { };
   extraTrustedPublicKeys = [ ];
   extraSubstituters = [ ];
-  gitignore = [ ];
 }

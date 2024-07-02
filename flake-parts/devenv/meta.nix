@@ -1,5 +1,5 @@
 _: {
-  description = "Structures for custom NixOS modules.";
+  description = "devenv";
 
   inputs = {
     devenv.url = "github:cachix/devenv";
@@ -16,5 +16,4 @@ _: {
   conflicts = [ "shells" ];
   extraTrustedPublicKeys = [ "https://devenv.cachix.org" ];
   extraSubstituters = [ "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=" ];
-  gitignore = [ ];
 }

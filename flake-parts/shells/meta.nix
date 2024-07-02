@@ -6,5 +6,4 @@ _: {
   conflicts = [ "devenv" ];
   extraTrustedPublicKeys = [ ];
   extraSubstituters = [ ];
-  gitignore = [ ];
 }

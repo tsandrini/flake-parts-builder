@@ -7,5 +7,4 @@ _: {
 
   extraTrustedPublicKeys = [ ];
   extraSubstituters = [ ];
-  gitignore = [ ];
 }
