@@ -46,7 +46,7 @@
       # import only the final modules, meaning that you can have an arbitrary
       # nested structure that suffices your needs. For example
       #
-      # - ./parts
+      # - ./flake-parts
       #   - modules/
       #     - nixos/
       #       - myNixosModule1.nix
@@ -57,11 +57,12 @@
       #       - myHomeModule2.nix
       #       - default.nix
       #     - sharedModules.nix
-      #    - pkgs/
-      #      - myPackage1.nix
-      #      - myPackage2.nix
-      #      - default.nix
-      #    - mySimpleModule.nix
+      #   - pkgs/
+      #     - myPackage1.nix
+      #     - myPackage2.nix
+      #     - default.nix
+      #   - mySimpleModule.nix
+      #   - _not_a_module.nix
       imports = loadParts ./flake-parts;
     };
 }
