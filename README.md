@@ -7,6 +7,7 @@
 
 TODO links, emotes, etc...
 TODO minimal dependencies
+TODO zero dependency
 
 Building a new flake project? Need a template with all the necessary
 boilerplate, but none perfectly fits your needs? Just **build your own**!
