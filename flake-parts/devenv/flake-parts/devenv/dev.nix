@@ -2,7 +2,7 @@
 {
   pkgs,
   devenv-root,
-  treefmt ? null,
+  treefmt-wrapper ? null,
   ...
 }:
 {
@@ -17,32 +17,34 @@
   # --------------------------
   packages =
     with pkgs;
-    [
-      # -- NIX UTILS --
-      nil # Yet another language server for Nix
-      statix # Lints and suggestions for the nix programming language
-      deadnix # Find and remove unused code in .nix source files
-      nix-output-monitor # Processes output of Nix commands to show helpful and pretty information
-      nixfmt-rfc-style # An opinionated formatter for Nix
-      # NOTE Choose a different formatter if you'd like to
-      # nixfmt # An opinionated formatter for Nix
-      # alejandra # The Uncompromising Nix Code Formatter
+    (
+      (lib.optional (treefmt-wrapper != null) treefmt-wrapper)
+      ++ [
+        # -- NIX UTILS --
+        nil # Yet another language server for Nix
+        statix # Lints and suggestions for the nix programming language
+        deadnix # Find and remove unused code in .nix source files
+        nix-output-monitor # Processes output of Nix commands to show helpful and pretty information
+        nixfmt-rfc-style # An opinionated formatter for Nix
+        # NOTE Choose a different formatter if you'd like to
+        # nixfmt # An opinionated formatter for Nix
+        # alejandra # The Uncompromising Nix Code Formatter
 
-      # -- GIT RELATED UTILS --
-      # commitizen # Tool to create committing rules for projects, auto bump versions, and generate changelogs
-      # cz-cli # The commitizen command line utility
-      # fh # The official FlakeHub CLI
-      # gh # GitHub CLI tool
-      # gh-dash # Github Cli extension to display a dashboard with pull requests and issues
+        # -- GIT RELATED UTILS --
+        # commitizen # Tool to create committing rules for projects, auto bump versions, and generate changelogs
+        # cz-cli # The commitizen command line utility
+        # fh # The official FlakeHub CLI
+        # gh # GitHub CLI tool
+        # gh-dash # Github Cli extension to display a dashboard with pull requests and issues
 
-      # -- BASE LANG UTILS --
-      markdownlint-cli # Command line interface for MarkdownLint
-      nodePackages.prettier # Prettier is an opinionated code formatter
-      # typos # Source code spell checker
+        # -- BASE LANG UTILS --
+        markdownlint-cli # Command line interface for MarkdownLint
+        # nodePackages.prettier # Prettier is an opinionated code formatter
+        # typos # Source code spell checker
 
-      # -- (YOUR) EXTRA PKGS --
-    ]
-    ++ (if treefmt != null then [ treefmt ] else [ ]);
+        # -- (YOUR) EXTRA PKGS --
+      ]
+    );
 
   enterShell = ''
     # Welcome splash text
@@ -85,8 +87,8 @@
   # https://devenv.sh/reference/options/#pre-commithooks
   pre-commit = {
     hooks = {
-      treefmt.enable = if (treefmt != null) then true else false;
-      treefmt.package = if (treefmt != null) then treefmt else pkgs.treefmt;
+      treefmt.enable = if (treefmt-wrapper != null) then true else false;
+      treefmt.package = if (treefmt-wrapper != null) then treefmt-wrapper else pkgs.treefmt;
 
       nil.enable = true; # Nix Language server, an incremental analysis assistant for writing in Nix.
       markdownlint.enable = true; # Markdown lint tool
