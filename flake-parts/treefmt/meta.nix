@@ -1,10 +1,11 @@
 _: {
-  description = "Sets up the default `systems` of flake-parts";
+  description = "Sets up the unified treefmt formatter bindings for your flake.";
 
   inputs = {
-    systems.url = "github:nix-systems/default";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
+  dependencies = [ "flake-root" ];
   extraTrustedPublicKeys = [ ];
   extraSubstituters = [ ];
   gitignore = [ ];

@@ -13,6 +13,7 @@ _: {
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
+  conflicts = [ "shells" ];
   extraTrustedPublicKeys = [ "https://devenv.cachix.org" ];
   extraSubstituters = [ "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=" ];
   gitignore = [ ];
