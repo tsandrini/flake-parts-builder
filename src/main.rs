@@ -37,7 +37,7 @@ struct InitCommand {
     parts_stores: Vec<String>,
 
     /// Disable base parts provided by this flake
-    #[arg(long = "no-base", default_value_t = false)]
+    #[arg(long = "disable-base-parts", default_value_t = false)]
     disable_base_parts: bool,
 }
 
