@@ -11,6 +11,7 @@
   writeShellScriptBin,
   treefmt-wrapper ? null,
   dev-process ? null,
+  pre-commit ? null,
 }:
 let
   scripts = {
@@ -55,6 +56,7 @@ mkShell {
 
   shellHook = ''
     ${lib.concatLines (lib.mapAttrsToList (name: value: "export ${name}=${value}") env)}
+    ${lib.optionalString (pre-commit != null) pre-commit.installationScript}
 
     # Welcome splash text
     echo ""; echo -e "\e[1;37;42mWelcome to the NAMEPLACEHOLDER devshell!\e[0m"; echo ""
