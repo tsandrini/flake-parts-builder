@@ -1,10 +1,11 @@
 _: {
-  description = "shells";
+  description = "Process-compose-flake";
 
-  inputs = {  };
+  inputs = {
+    process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";
+  };
 
   conflicts = [ "devenv" ];
   extraTrustedPublicKeys = [ ];
   extraSubstituters = [ ];
-  gitignore = [ ];
 }
