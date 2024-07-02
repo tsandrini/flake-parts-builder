@@ -9,7 +9,8 @@
 
         dev = pkgs.callPackage ./dev.nix {
           inherit lib;
-          treefmtCustom = if (lib.hasAttr "treefmt" config) then config.treefmt.build.wrapper else null;
+          treefmt-wrapper = if (lib.hasAttr "treefmt" config) then config.treefmt.build.wrapper else null;
+          dev-process = if (lib.hasAttr "process-compose" config) then config.packages.dev-process else null;
         };
       };
     };

@@ -9,7 +9,8 @@
   nixfmt-rfc-style,
   markdownlint-cli,
   writeShellScriptBin,
-  treefmtCustom ? null,
+  treefmt-wrapper ? null,
+  dev-process ? null,
 }:
 let
   scripts = {
@@ -27,7 +28,8 @@ mkShell {
 
   packages =
     (lib.attrValues scripts)
-    ++ (lib.optional (treefmtCustom != null) treefmtCustom)
+    ++ (lib.optional (treefmt-wrapper != null) treefmt-wrapper)
+    ++ (lib.optional (dev-process != null) dev-process)
     ++ [
       # -- NIX UTILS --
       nil # Yet another language server for Nix
