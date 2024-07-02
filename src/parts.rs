@@ -24,10 +24,10 @@ pub struct FlakePartMetadata {
     inputs: JsonValue,
 
     #[serde(default)]
-    dependencies: Vec<String>,
+    dependencies: Vec<String>, // TODO
 
     #[serde(default)]
-    conflicts: Vec<String>,
+    conflicts: Vec<String>, // TODO
 
     #[serde(rename = "extraTrustedPublicKeys", default)]
     extra_trusted_public_keys: Vec<String>,
@@ -36,7 +36,7 @@ pub struct FlakePartMetadata {
     extra_substituters: Vec<String>,
 
     #[serde(default)]
-    gitignore: Vec<String>,
+    gitignore: Vec<String>, // TODO probably remove
 }
 
 #[derive(Debug, Serialize)]
