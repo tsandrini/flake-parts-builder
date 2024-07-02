@@ -1,6 +1,6 @@
 # --- flake.nix
 {
-  description = "flake-parts-builder - TODO";
+  description = "flake-parts-builder - Nix flakes interactive template builder based on flake-parts. ";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -68,10 +68,7 @@
               cargoSha256 = "sha256-6rVpTWcGX+sNCEq14AEkqC8Ui+tnso50ZXMv28evMxg=";
 
               # TODO test that it does the thing
-              buildInputs = with pkgs; [
-                rsync
-                jq
-              ];
+              buildInputs = with pkgs; [ ];
             };
 
             flake-parts = pkgs.stdenv.mkDerivation {
@@ -97,14 +94,43 @@
             };
           };
 
-          devShells.default = pkgs.mkShell {
-            buildInputs = with pkgs; [
-              rustc
-              cargo
-              clippy
-              rustfmt
-              rust-analyzer
-            ];
+          devShells = rec {
+            default = dev;
+
+            dev = pkgs.mkShell {
+              buildInputs = with pkgs; [
+                # -- NIX UTILS --
+                nil # Yet another language server for Nix
+                statix # Lints and suggestions for the nix programming language
+                deadnix # Find and remove unused code in .nix source files
+                nix-output-monitor # Processes output of Nix commands to show helpful and pretty information
+                nixfmt-rfc-style # An opinionated formatter for Nix
+
+                # -- GIT RELATED UTILS --
+                commitizen # Tool to create committing rules for projects, auto bump versions, and generate changelogs
+                cz-cli # The commitizen command line utility
+                # fh # The official FlakeHub CLI
+                gh # GitHub CLI tool
+                gh-dash # Github Cli extension to display a dashboard with pull requests and issues
+
+                # -- BASE LANG UTILS --
+                markdownlint-cli # Command line interface for MarkdownLint
+                # nodePackages.prettier # Prettier is an opinionated code formatter
+                # typos # Source code spell checker
+
+                # -- (YOUR) EXTRA PKGS --
+                rustc
+                cargo
+                clippy
+                rustfmt
+                rust-analyzer
+              ];
+
+              shellHook = ''
+                # Welcome splash text
+                echo ""; echo -e "\e[1;37;42mWelcome to the flake-parts-builder devshell!\e[0m"; echo ""
+              '';
+            };
           };
         };
     };
