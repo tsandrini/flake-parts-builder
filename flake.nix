@@ -119,11 +119,6 @@
                 # typos # Source code spell checker
 
                 # -- (YOUR) EXTRA PKGS --
-                rustc
-                cargo
-                clippy
-                rustfmt
-                rust-analyzer
               ];
 
               shellHook = ''
