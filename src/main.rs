@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::{Args, Parser, Subcommand};
+use itertools::Itertools;
 use minijinja::{context, Environment};
 use std::io::Write;
 use std::path::PathBuf;
@@ -39,6 +40,10 @@ struct InitCommand {
     /// Disable base parts provided by this flake
     #[arg(long = "disable-base-parts", default_value_t = false)]
     disable_base_parts: bool,
+
+    /// Force the initialization even in case of conflicts
+    #[arg(long = "force", default_value_t = false)]
+    force: bool,
 }
 
 #[derive(Debug, Args)]
@@ -70,36 +75,73 @@ fn init(mut cmd: InitCommand) -> Result<()> {
             .push(format!("{}#flake-parts", SELF_FLAKE_URI));
     }
 
+    // NOTE
+    // 1. Load all FlakePartsStores
+    // 2. Create an iterator over all parts (don't collect them yet)
+    // 3. Construct a final vec of all parts that should be used
+    //    a. First we parse the CLI parts
+    //    b. Then we iterate over those to add potential dependencies
+    //    c. Unique filter
+    //    d. Combine these two
+    // 4. We finally can create a vec of all parts that should be used
+    // 5. Collect! (profit)
+
     // NOTE this one is required even if you disable this parts store
     cmd.parts
         .push(format!("{}#flake-parts/_base", SELF_FLAKE_URI));
 
-    let parts_flake_uri = cmd
-        .parts
-        .into_iter()
-        .map(|part| {
-            if part.contains('#') {
-                part
-            } else {
-                format!("{}#flake-parts/{}", SELF_FLAKE_URI, part)
-            }
-        })
-        .collect::<Vec<_>>();
-
-    println!("parts flake uri: {:?}", parts_flake_uri);
-
-    let out_parts = cmd
+    let stores = cmd
         .parts_stores
         .iter()
         .map(|store| FlakePartsStore::from_flake_uri(&store))
-        .collect::<Result<Vec<FlakePartsStore>, FlakePartsStoreParseError>>()?
-        .into_iter()
-        .map(|store| store.parts)
-        .flatten()
-        .filter(|part| parts_flake_uri.contains(&part.flake_uri))
-        .collect::<Vec<FlakePart>>();
+        .collect::<Result<Vec<FlakePartsStore>, FlakePartsStoreParseError>>()?;
 
-    println!("out parts: {:?}", out_parts);
+    let proto_out_parts = stores
+        .iter()
+        .flat_map(|store| store.parts.iter().map(move |part| (store, part)));
+
+    // .collect::<Vec<(&FlakePartsStore, &FlakePart)>>();
+
+    let final_parts_uris = {
+        let mut proto_out_parts_uris = cmd
+            .parts
+            .into_iter()
+            .map(|part| {
+                if part.contains('#') {
+                    part
+                } else {
+                    format!("{}#flake-parts/{}", SELF_FLAKE_URI, part)
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let mut dependencies = proto_out_parts
+            // NOTE we are traversing twice over the proto_out_parts
+            // hence we need the iterator clone
+            .clone()
+            .flat_map(|(&ref store, &ref part)| {
+                part.metadata.dependencies.iter().map(|dep| {
+                    if dep.contains('#') {
+                        dep.to_string()
+                    } else {
+                        format!("{}/{}", store.flake_uri, dep)
+                    }
+                })
+            })
+            .unique()
+            .filter(|uri| !proto_out_parts_uris.contains(uri))
+            .collect::<Vec<_>>();
+
+        proto_out_parts_uris.append(&mut dependencies);
+        proto_out_parts_uris
+    };
+
+    let final_out_parts = proto_out_parts
+        .filter(|(&ref store, &ref part)| {
+            final_parts_uris.contains(&format!("{}/{}", store.flake_uri, part.name))
+        })
+        .map(|(_, part)| part)
+        .collect::<Vec<_>>();
 
     // NOTE
     // 1. convert cmd.parts to actual parts
@@ -148,7 +190,7 @@ fn list(mut cmd: ListCommand) -> Result<()> {
             .try_for_each(|part| {
                 stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)))?;
 
-                write!(&mut stdout, "  - {}: ", part.short_name)?;
+                write!(&mut stdout, "  - {}: ", part.name)?;
 
                 stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
 

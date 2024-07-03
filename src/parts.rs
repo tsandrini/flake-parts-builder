@@ -1,16 +1,15 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
-use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 use std::str::FromStr;
+use std::{fs, path};
 use thiserror::Error;
 
 #[derive(Debug)]
 pub struct FlakePart {
-    pub flake_uri: String,
-    pub short_name: String,
-    nix_store_path: PathBuf,
+    pub name: String,
+    pub nix_store_path: PathBuf,
     pub metadata: FlakePartMetadata,
 }
 
@@ -20,22 +19,19 @@ pub struct FlakePartMetadata {
     pub description: String,
 
     #[serde(default)]
-    inputs: JsonValue,
+    pub inputs: JsonValue,
 
     #[serde(default)]
-    dependencies: Vec<String>, // TODO
+    pub dependencies: Vec<String>, // TODO
 
     #[serde(default)]
-    conflicts: Vec<String>, // TODO
+    pub conflicts: Vec<String>, // TODg
 
     #[serde(rename = "extraTrustedPublicKeys", default)]
     extra_trusted_public_keys: Vec<String>,
 
     #[serde(rename = "extraSubstituters", default)]
     extra_substituters: Vec<String>,
-
-    #[serde(default)]
-    gitignore: Vec<String>, // TODO probably remove
 }
 
 #[derive(Debug, Serialize)]
@@ -48,7 +44,7 @@ pub struct FlakeContext {
 #[derive(Debug)]
 pub struct FlakePartsStore {
     pub flake_uri: String,
-    nix_store_path: PathBuf,
+    pub nix_store_path: PathBuf,
     pub parts: Vec<FlakePart>,
 }
 
@@ -61,7 +57,7 @@ impl FlakeContext {
         }
     }
 
-    pub fn from_metadata_merge(metadata: &[FlakePartMetadata]) -> Self {
+    pub fn from_merged_metadata(metadata: &[FlakePartMetadata]) -> Self {
         let inputs = metadata
             .iter()
             .fold(JsonValue::Object(Default::default()), |mut acc, m| {
@@ -96,8 +92,8 @@ impl FlakeContext {
 impl FromStr for FlakePart {
     type Err = FlakePartParseError;
 
-    fn from_str(s: &str) -> Result<Self, FlakePartParseError> {
-        FlakePart::from_path(PathBuf::from(s), "".to_string())
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        FlakePart::from_path(PathBuf::from(s))
     }
 }
 
@@ -117,10 +113,15 @@ pub enum FlakePartParseError {
 }
 
 impl FlakePart {
-    pub fn from_path(
-        path: PathBuf,
-        parent_store_flake_uri: String,
-    ) -> Result<Self, FlakePartParseError> {
+    fn new(name: &str, nix_store_path: PathBuf, metadata: FlakePartMetadata) -> Self {
+        Self {
+            name: name.to_string(),
+            nix_store_path,
+            metadata,
+        }
+    }
+
+    pub fn from_path(path: PathBuf) -> Result<Self, FlakePartParseError> {
         let name = path
             .file_name()
             .ok_or(FlakePartParseError::InvalidPathError())?
@@ -145,13 +146,7 @@ impl FlakePart {
         let metadata: FlakePartMetadata = serde_json::from_str(&output)
             .map_err(|e| FlakePartParseError::MetadataConversionError(e))?;
 
-        let flake_uri = format!("{}/{}", parent_store_flake_uri, name);
-        Ok(Self {
-            flake_uri: flake_uri,
-            short_name: name.to_string(),
-            nix_store_path: path,
-            metadata: metadata,
-        })
+        Ok(Self::new(name, path.clone(), metadata))
     }
 }
 
@@ -168,6 +163,14 @@ pub enum FlakePartsStoreParseError {
 }
 
 impl FlakePartsStore {
+    fn new(flake_uri: &str, nix_store_path: PathBuf, parts: Vec<FlakePart>) -> Self {
+        Self {
+            flake_uri: flake_uri.to_string(),
+            nix_store_path,
+            parts,
+        }
+    }
+
     pub fn from_flake_uri(flake_uri: &str) -> Result<Self, FlakePartsStoreParseError> {
         let nix_info = Command::new("nix")
             .args(["build", "--no-link", "--print-out-paths", &flake_uri])
@@ -181,22 +184,18 @@ impl FlakePartsStore {
             .map(|entry| {
                 let entry = entry?;
 
-                Ok(FlakePart::from_path(entry.path(), flake_uri.to_string())?)
+                Ok(FlakePart::from_path(entry.path())?)
             })
             .collect::<Result<Vec<FlakePart>, FlakePartParseError>>()?;
 
-        Ok(Self {
-            nix_store_path: PathBuf::from(&output.trim()),
-            flake_uri: flake_uri.to_string(),
-            parts: parts,
-        })
+        Ok(Self::new(flake_uri, PathBuf::from(output.trim()), parts))
     }
 }
 
 impl FromStr for FlakePartsStore {
     type Err = FlakePartsStoreParseError;
 
-    fn from_str(s: &str) -> Result<Self, FlakePartsStoreParseError> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         FlakePartsStore::from_flake_uri(s)
     }
 }
