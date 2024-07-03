@@ -30,7 +30,7 @@ struct InitCommand {
     path: PathBuf,
 
     /// Desired parts to be used
-    #[arg(short = 'P', long, required = true)]
+    #[arg(short = 'P', long, required = true, value_delimiter = ',')]
     parts: Vec<String>,
 
     /// Additional parts templates stores to load
@@ -67,14 +67,7 @@ enum Commands {
     // TODO add a command to add a new part
 }
 
-fn init(mut cmd: InitCommand) -> Result<()> {
-    // let target = tempdir()?;
-
-    if !cmd.disable_base_parts {
-        cmd.parts_stores
-            .push(format!("{}#flake-parts", SELF_FLAKE_URI));
-    }
-
+fn parse_final_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
     // NOTE
     // 1. Load all FlakePartsStores
     // 2. Create an iterator over all parts (don't collect them yet)
@@ -85,11 +78,6 @@ fn init(mut cmd: InitCommand) -> Result<()> {
     //    d. Combine these two
     // 4. We finally can create a vec of all parts that should be used
     // 5. Collect! (profit)
-
-    // NOTE this one is required even if you disable this parts store
-    cmd.parts
-        .push(format!("{}#flake-parts/_base", SELF_FLAKE_URI));
-
     let stores = cmd
         .parts_stores
         .iter()
@@ -100,11 +88,10 @@ fn init(mut cmd: InitCommand) -> Result<()> {
         .iter()
         .flat_map(|store| store.parts.iter().map(move |part| (store, part)));
 
-    // .collect::<Vec<(&FlakePartsStore, &FlakePart)>>();
-
     let final_parts_uris = {
         let mut proto_out_parts_uris = cmd
             .parts
+            .clone()
             .into_iter()
             .map(|part| {
                 if part.contains('#') {
@@ -140,8 +127,25 @@ fn init(mut cmd: InitCommand) -> Result<()> {
         .filter(|(&ref store, &ref part)| {
             final_parts_uris.contains(&format!("{}/{}", store.flake_uri, part.name))
         })
-        .map(|(_, part)| part)
-        .collect::<Vec<_>>();
+        .map(|(_, part)| part.clone())
+        .collect::<Vec<FlakePart>>();
+
+    Ok(final_out_parts)
+}
+
+fn init(mut cmd: InitCommand) -> Result<()> {
+    // let target = tempdir()?;
+
+    if !cmd.disable_base_parts {
+        cmd.parts_stores
+            .push(format!("{}#flake-parts", SELF_FLAKE_URI));
+    }
+
+    // NOTE this one is required even if you disable this parts store
+    cmd.parts
+        .push(format!("{}#flake-parts/_base", SELF_FLAKE_URI));
+
+    let final_parts = parse_final_parts(&cmd)?;
 
     // NOTE
     // 1. convert cmd.parts to actual parts
@@ -164,9 +168,6 @@ fn init(mut cmd: InitCommand) -> Result<()> {
         ))
         .unwrap()
     );
-
-    // let rendered = tt.render("flake.nix", &context)?;
-    // println!("{}", rendered);
 
     Ok(())
 }

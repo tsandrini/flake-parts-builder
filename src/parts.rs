@@ -6,7 +6,7 @@ use std::str::FromStr;
 use std::{fs, path};
 use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FlakePart {
     pub name: String,
     pub nix_store_path: PathBuf,
