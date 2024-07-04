@@ -13,7 +13,7 @@ pub struct FlakePart {
     pub metadata: FlakePartMetadata,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FlakePartMetadata {
     #[serde(default)]
     pub description: String,
