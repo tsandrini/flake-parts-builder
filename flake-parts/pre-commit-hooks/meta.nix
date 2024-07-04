@@ -2,7 +2,7 @@ _: {
   description = "Pre-commit hooks";
 
   inputs = {
-    inputs.pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
   };
   conflicts = [ "devenv" ];
   extraTrustedPublicKeys = [

@@ -22,7 +22,7 @@ let
         inherit inputs hostName;
       } // extraSpecialArgs;
     in
-    lib.nixosSystem {
+    inputs.nixpkgs.lib.nixosSystem {
       inherit (args) system;
       specialArgs = baseSpecialArgs // {
         inherit lib hostName;

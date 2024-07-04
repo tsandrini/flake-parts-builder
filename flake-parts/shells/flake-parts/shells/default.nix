@@ -4,7 +4,7 @@
   perSystem =
     { pkgs, config, ... }:
     {
-      devshells = rec {
+      devShells = rec {
         default = dev;
 
         dev = pkgs.callPackage ./dev.nix {
