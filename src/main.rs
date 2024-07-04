@@ -26,7 +26,9 @@ enum Commands {
 
     /// List all available flake-parts
     List(ListCommand),
-    // TODO add a command to add a new part
+
+    // TODO
+    Add,
 }
 
 // TODO add logging
@@ -39,6 +41,7 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Init(cmd) => init(cmd),
         Commands::List(cmd) => list(cmd),
+        Commands::Add => todo!("Add command not implemented yet"), // TODO
     }
 }
 
