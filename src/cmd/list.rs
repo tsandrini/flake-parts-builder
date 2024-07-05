@@ -1,5 +1,5 @@
-use anyhow::Result; // TODO FIXME
 use clap::Args;
+use color_eyre::eyre::Result;
 use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 

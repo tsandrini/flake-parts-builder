@@ -1,5 +1,5 @@
-use anyhow::Result;
 use clap::{Parser, Subcommand};
+use color_eyre::eyre::Result;
 
 mod cmd;
 mod config;
@@ -36,7 +36,9 @@ enum Commands {
 // TODO add tests
 // TODO better docs
 // TODO constructors?
+// TODO implement checking for wrongly provided parts
 fn main() -> Result<()> {
+    color_eyre::install()?;
     let cli = Cli::parse();
 
     match cli.command {

@@ -1,10 +1,13 @@
+use color_eyre::eyre::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
+use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 use std::str::FromStr;
-use std::{fs, path};
 use thiserror::Error;
+
+use crate::config::META_FILE;
 
 #[derive(Debug, Clone)]
 pub struct FlakePart {
@@ -140,7 +143,7 @@ impl FlakePart {
             .args([
                 "eval",
                 "--expr",
-                "let pkgs = import <nixpkgs> {}; in import ./meta.nix { inherit pkgs; inherit (pkgs) lib; }",
+                &format!("let pkgs = import <nixpkgs> {{}}; in import ./{} {{ inherit pkgs; inherit (pkgs) lib; }}", META_FILE),
                 "--impure",
                 "--json",
             ])

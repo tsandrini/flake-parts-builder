@@ -1,15 +1,14 @@
-use anyhow::Result;
+use color_eyre::eyre::Result;
 use diff::{slice, Result as DiffResult};
 use fs_extra::dir::{self, CopyOptions};
-use itertools::Itertools;
 use regex::Regex;
 use std::fs::{self, File, Permissions};
 use std::io::{self, Read, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
-use std::path::PathBuf;
-use tempfile::tempdir; // TODO FIXME
 use walkdir::WalkDir;
+
+use crate::config::META_FILE;
 
 // TODO might implement a "merging" strategy instead of skipping/overwriting
 // but currently not entirely sure about its use case
@@ -60,7 +59,7 @@ pub fn merge_files(base: &Path, theirs: &Path, ours: &Path) -> Result<()> {
 pub fn merge_dirs(src: &Path, dst: &Path, options: &CopyOptions) -> Result<()> {
     for entry in WalkDir::new(src)
         .into_iter()
-        .filter_entry(|e| e.file_name() != "meta.nix")
+        .filter_entry(|e| e.file_name() != META_FILE)
     {
         let entry = entry?;
         let target_path = dst.join(entry.path().strip_prefix(src)?);

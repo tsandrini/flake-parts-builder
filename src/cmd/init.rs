@@ -1,5 +1,5 @@
-use anyhow::Result;
-use clap::Args;
+use clap::{Args, ValueEnum};
+use color_eyre::eyre::Result;
 use fs_extra::dir::{self, CopyOptions};
 use itertools::Itertools;
 use minijinja::{context, Environment};
@@ -8,10 +8,10 @@ use std::path::PathBuf;
 use tempfile::tempdir; // TODO FIXME
                        //
 
-use crate::config::{FLAKE_TEMPLATE, NAMEPLACEHOLDER, SELF_FLAKE_URI};
-use crate::parts::{
-    FlakeContext, FlakePart, FlakePartMetadata, FlakePartsStore, FlakePartsStoreParseError,
+use crate::config::{
+    BASE_PARTS_DERIVATION, FLAKE_TEMPLATE, META_FILE, NAMEPLACEHOLDER, SELF_FLAKE_URI,
 };
+use crate::parts::{FlakeContext, FlakePart, FlakePartsStore, FlakePartsStoreParseError};
 
 use crate::fs_utils::{regex_in_dir_recursive, reset_permissions};
 
@@ -25,16 +25,36 @@ pub struct InitCommand {
     parts: Vec<String>,
 
     /// Additional parts templates stores to load
-    #[arg(short = 'S', long = "stores")]
+    #[arg(short = 'I', long = "include")]
     parts_stores: Vec<String>,
 
+    /// Strategy to use when encountering already existing files
+    #[arg(value_enum, short, long, default_value = "skip")]
+    strategy: InitStrategy,
+
     /// Disable base parts provided by this flake
-    #[arg(long = "disable-base-parts", default_value_t = false)]
+    /// NOTE: _bootstrap part is always included
+    /// for the project to properly function
+    #[arg(long = "disable-base", default_value_t = false)]
     disable_base_parts: bool,
 
     /// Force the initialization even in case of conflicts
     #[arg(long = "force", default_value_t = false)]
     force: bool,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum InitStrategy {
+    /// Skip file if already present in the filesystem
+    Skip,
+
+    /// Overwrite file if already present in the filesystem
+    Overwrite,
+
+    /// Try to merge file if already present in the filesystem.
+    /// This will use a diff like patching algorithm and may fail
+    /// in case of conflicts. (TODO not public yet)
+    Merge,
 }
 
 pub fn parse_final_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
@@ -67,7 +87,7 @@ pub fn parse_final_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
                 if part.contains('#') {
                     part
                 } else {
-                    format!("{}#flake-parts/{}", SELF_FLAKE_URI, part)
+                    format!("{}#{}/{}", SELF_FLAKE_URI, BASE_PARTS_DERIVATION, part)
                 }
             })
             .collect::<Vec<_>>();
@@ -107,12 +127,14 @@ pub fn parse_final_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
 pub fn init(mut cmd: InitCommand) -> Result<()> {
     if !cmd.disable_base_parts {
         cmd.parts_stores
-            .push(format!("{}#flake-parts", SELF_FLAKE_URI));
+            .push(format!("{}#{}", SELF_FLAKE_URI, BASE_PARTS_DERIVATION));
     }
 
-    // NOTE this one is required even if you disable this parts store
-    cmd.parts
-        .push(format!("{}#flake-parts/_base", SELF_FLAKE_URI));
+    // NOTE this one is required even if you disable base store parts
+    cmd.parts.push(format!(
+        "{}#{}/_bootstrap",
+        SELF_FLAKE_URI, BASE_PARTS_DERIVATION
+    ));
 
     let final_parts = parse_final_parts(&cmd)?;
 
@@ -129,7 +151,7 @@ pub fn init(mut cmd: InitCommand) -> Result<()> {
             &CopyOptions::new().content_only(true).skip_exist(true),
         )?;
     }
-    std::fs::remove_file(target.path().join("meta.nix"))?;
+    std::fs::remove_file(target.path().join(META_FILE))?;
     reset_permissions(target.path().to_str().unwrap())?;
 
     {
@@ -148,15 +170,19 @@ pub fn init(mut cmd: InitCommand) -> Result<()> {
         fs::write(target_path.join("flake.nix"), rendered)?;
     }
 
-    // TODO Error handling
-    let name = cmd.path.file_name().unwrap().to_str().unwrap();
-
-    regex_in_dir_recursive(target_path.to_str().unwrap(), &NAMEPLACEHOLDER, name)?;
+    // This becomes None when `.`, `../`,etc... is passed
+    if let Some(name) = cmd.path.file_name() {
+        let name = name.to_str().unwrap();
+        regex_in_dir_recursive(target_path.to_str().unwrap(), &NAMEPLACEHOLDER, name)?;
+    }
 
     dir::copy(
         &target_path,
         &cmd.path,
-        &CopyOptions::new().content_only(true),
+        &CopyOptions::new()
+            .content_only(true)
+            .skip_exist(cmd.strategy == InitStrategy::Skip)
+            .overwrite(cmd.strategy == InitStrategy::Overwrite),
     )?;
 
     Ok(())
