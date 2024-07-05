@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 
 mod cmd;
 mod config;
+mod fs_utils;
 mod parts;
 
 use crate::cmd::init::{init, InitCommand};

@@ -49,15 +49,27 @@ pub struct FlakePartsStore {
 }
 
 impl FlakeContext {
-    pub fn from_metadata(metadata: &FlakePartMetadata) -> Self {
+    fn new(
+        inputs: JsonValue,
+        extra_trusted_public_keys: Vec<String>,
+        extra_substituters: Vec<String>,
+    ) -> Self {
         Self {
-            inputs: metadata.inputs.clone(),
-            extra_trusted_public_keys: metadata.extra_trusted_public_keys.clone(),
-            extra_substituters: metadata.extra_substituters.clone(),
+            inputs,
+            extra_trusted_public_keys,
+            extra_substituters,
         }
     }
 
-    pub fn from_merged_metadata(metadata: &[FlakePartMetadata]) -> Self {
+    pub fn from_metadata(metadata: &FlakePartMetadata) -> Self {
+        Self::new(
+            metadata.inputs.clone(),
+            metadata.extra_trusted_public_keys.clone(),
+            metadata.extra_substituters.clone(),
+        )
+    }
+
+    pub fn from_merged_metadata(metadata: Vec<&FlakePartMetadata>) -> Self {
         let inputs = metadata
             .iter()
             .fold(JsonValue::Object(Default::default()), |mut acc, m| {
@@ -81,11 +93,7 @@ impl FlakeContext {
             .flat_map(|m| m.extra_substituters.iter().cloned())
             .collect::<Vec<String>>();
 
-        Self {
-            inputs,
-            extra_trusted_public_keys,
-            extra_substituters,
-        }
+        Self::new(inputs, extra_trusted_public_keys, extra_substituters)
     }
 }
 

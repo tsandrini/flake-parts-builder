@@ -1,12 +1,19 @@
 use anyhow::Result;
 use clap::Args;
+use fs_extra::dir::{self, CopyOptions};
 use itertools::Itertools;
 use minijinja::{context, Environment};
+use std::fs::{self};
 use std::path::PathBuf;
 use tempfile::tempdir; // TODO FIXME
+                       //
 
-use crate::config::{FLAKE_TEMPLATE, SELF_FLAKE_URI};
-use crate::parts::{FlakeContext, FlakePart, FlakePartsStore, FlakePartsStoreParseError};
+use crate::config::{FLAKE_TEMPLATE, NAMEPLACEHOLDER, SELF_FLAKE_URI};
+use crate::parts::{
+    FlakeContext, FlakePart, FlakePartMetadata, FlakePartsStore, FlakePartsStoreParseError,
+};
+
+use crate::fs_utils::{regex_in_dir_recursive, reset_permissions};
 
 #[derive(Debug, Args)]
 pub struct InitCommand {
@@ -90,6 +97,7 @@ pub fn parse_final_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
         .filter(|(&ref store, &ref part)| {
             final_parts_uris.contains(&format!("{}/{}", store.flake_uri, part.name))
         })
+        // TODO cannot figure out how to handle this without cloning
         .map(|(_, part)| part.clone())
         .collect::<Vec<FlakePart>>();
 
@@ -97,8 +105,6 @@ pub fn parse_final_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
 }
 
 pub fn init(mut cmd: InitCommand) -> Result<()> {
-    let target = tempdir()?;
-
     if !cmd.disable_base_parts {
         cmd.parts_stores
             .push(format!("{}#flake-parts", SELF_FLAKE_URI));
@@ -110,29 +116,48 @@ pub fn init(mut cmd: InitCommand) -> Result<()> {
 
     let final_parts = parse_final_parts(&cmd)?;
 
-    // TODO handle conflicts
-    println!("{:?}", cmd.path.file_name());
-
-    if cmd.path.exists() {
-        println!("Path already exists");
+    if !cmd.path.exists() {
+        dir::create_all(&cmd.path, false)?;
     }
 
-    // println!("{:?}", cmd.path.);
+    let target = tempdir()?;
+    let target_path = target.path();
+    for part in &final_parts {
+        dir::copy(
+            &part.nix_store_path,
+            &target_path,
+            &CopyOptions::new().content_only(true).skip_exist(true),
+        )?;
+    }
+    std::fs::remove_file(target.path().join("meta.nix"))?;
+    reset_permissions(target.path().to_str().unwrap())?;
 
-    let mut env = Environment::new();
-    env.add_template("flake.nix", &FLAKE_TEMPLATE).unwrap();
-    let tmpl = env.get_template("flake.nix").unwrap();
-    println!(
-        "{}",
-        tmpl.render(context!(
-            context => FlakeContext {
-                inputs: Default::default(),
-                extra_trusted_public_keys: vec![String::from("haha"), String::from("hehe")],
-                extra_substituters: Default::default(),
-            }
-        ))
-        .unwrap()
-    );
+    {
+        let metadata = final_parts
+            .iter()
+            .map(|part| &part.metadata)
+            .collect::<Vec<_>>();
+
+        let flake_context = FlakeContext::from_merged_metadata(metadata);
+
+        let mut env = Environment::new();
+        env.add_template("flake.nix", &FLAKE_TEMPLATE).unwrap();
+        let tmpl = env.get_template("flake.nix").unwrap();
+        let rendered = tmpl.render(context!(context => flake_context))?;
+
+        fs::write(target_path.join("flake.nix"), rendered)?;
+    }
+
+    // TODO Error handling
+    let name = cmd.path.file_name().unwrap().to_str().unwrap();
+
+    regex_in_dir_recursive(target_path.to_str().unwrap(), &NAMEPLACEHOLDER, name)?;
+
+    dir::copy(
+        &target_path,
+        &cmd.path,
+        &CopyOptions::new().content_only(true),
+    )?;
 
     Ok(())
 }
