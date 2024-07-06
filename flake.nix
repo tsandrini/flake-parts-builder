@@ -1,6 +1,6 @@
 # --- flake.nix
 {
-  description = "flake-parts-builder - Nix flakes interactive template builder based on flake-parts. ";
+  description = "Nix flakes interactive template builder based on flake-parts written in Rust.";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -41,6 +41,8 @@
               lib.nameValuePair "" null
           ) (builtins.readDir dir);
 
+        # NOTE In case anyone ditches _bootstrap and wants to use
+        # load-parts directly from here.
         loadParts = dir: flatten (mapModules dir (x: x));
       };
 
@@ -52,7 +54,6 @@
           ...
         }:
         {
-
           packages = rec {
             default = builder;
 
@@ -67,8 +68,7 @@
 
               cargoSha256 = "sha256-6rVpTWcGX+sNCEq14AEkqC8Ui+tnso50ZXMv28evMxg=";
 
-              # TODO test that it does the thing
-              buildInputs = with pkgs; [ ];
+              buildInputs = with pkgs; [ nixfmt-rfc-style ];
             };
 
             flake-parts = pkgs.stdenv.mkDerivation {
