@@ -11,7 +11,7 @@ use crate::config::{
     BASE_PARTS_DERIVATION, FLAKE_INPUTS_TEMPLATE, FLAKE_TEMPLATE, META_FILE, NAMEPLACEHOLDER,
     SELF_FLAKE_URI,
 };
-use crate::parts::{FlakeContext, FlakePart, FlakePartsStore, FlakePartsStoreParseError};
+use crate::parts::{FlakeContext, FlakePart, FlakePartsStore};
 
 use crate::fs_utils::{regex_in_dir_recursive, reset_permissions};
 
@@ -72,7 +72,7 @@ pub fn parse_final_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
         .parts_stores
         .iter()
         .map(|store| FlakePartsStore::from_flake_uri(&store))
-        .collect::<Result<Vec<FlakePartsStore>, FlakePartsStoreParseError>>()?;
+        .collect::<Result<Vec<FlakePartsStore>>>()?;
 
     let proto_out_parts = stores
         .iter()

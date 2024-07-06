@@ -4,6 +4,7 @@ use color_eyre::eyre::Result;
 mod cmd;
 mod config;
 mod fs_utils;
+mod nix;
 mod parts;
 
 use crate::cmd::init::{init, InitCommand};
@@ -12,6 +13,7 @@ use crate::cmd::list::{list, ListCommand};
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
+    /// Henlo
     #[command(subcommand)]
     command: Commands,
 

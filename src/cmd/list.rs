@@ -9,11 +9,13 @@ use crate::parts::FlakePartsStore;
 #[derive(Debug, Args)]
 pub struct ListCommand {
     /// Additional parts templates stores to load
-    #[arg(short = 'S', long = "stores")]
+    #[arg(short = 'I', long = "include")]
     parts_stores: Vec<String>,
 
     /// Disable base parts provided by this flake
-    #[arg(long = "no-base", default_value_t = false)]
+    /// NOTE: _bootstrap part is always included
+    /// for the project to properly function
+    #[arg(long = "disable-base", default_value_t = false)]
     disable_base_parts: bool,
 }
 
