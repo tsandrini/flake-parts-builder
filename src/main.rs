@@ -37,6 +37,8 @@ enum Commands {
 // TODO better docs
 // TODO constructors?
 // TODO implement checking for wrongly provided parts
+// TODO github actions, gitlab actions?
+// TODO format after init
 fn main() -> Result<()> {
     color_eyre::install()?;
     let cli = Cli::parse();

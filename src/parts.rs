@@ -64,14 +64,6 @@ impl FlakeContext {
         }
     }
 
-    pub fn from_metadata(metadata: &FlakePartMetadata) -> Self {
-        Self::new(
-            metadata.inputs.clone(),
-            metadata.extra_trusted_public_keys.clone(),
-            metadata.extra_substituters.clone(),
-        )
-    }
-
     pub fn from_merged_metadata(metadata: Vec<&FlakePartMetadata>) -> Self {
         let inputs = metadata
             .iter()
@@ -96,7 +88,11 @@ impl FlakeContext {
             .flat_map(|m| m.extra_substituters.iter().cloned())
             .collect::<Vec<String>>();
 
-        Self::new(inputs, extra_trusted_public_keys, extra_substituters)
+        Self::new(
+            inputs.clone(),
+            extra_trusted_public_keys,
+            extra_substituters,
+        )
     }
 }
 

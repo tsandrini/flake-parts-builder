@@ -1,6 +1,6 @@
 # --- flake.nix
 {
-  description = "NAMEPLACEHOLDER - TODO Add a description of your new project";
+  description = "TODO Add a description of your new project";
 
   inputs = {
     # --- BASE DEPENDENCIES ---
@@ -8,6 +8,7 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     # --- YOUR DEPENDENCIES ---
+    {%- include "flake-inputs.nix" -%}
   };
 
   # NOTE Here you can add additional binary cache substituers that you trust.
@@ -17,7 +18,7 @@
     extra-trusted-public-keys = [
       # "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
       # "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-      {% if context.extra_trusted_public_keys -%}
+      {% if context.extra_trusted_public_keys is defined -%}
       {% for key in context.extra_trusted_public_keys -%}
       # "{{ key }}"
       {% endfor -%}
@@ -26,7 +27,7 @@
     extra-substituters = [
       # "https://cache.nixos.org"
       # "https://nix-community.cachix.org/"
-      {% if context.extra_substituters -%}
+      {% if context.extra_substituters is defined -%}
       {% for substituter in context.extra_substituters -%}
       # "{{ substituter }}"
       {% endfor -%}

@@ -2,14 +2,15 @@ use clap::{Args, ValueEnum};
 use color_eyre::eyre::Result;
 use fs_extra::dir::{self, CopyOptions};
 use itertools::Itertools;
-use minijinja::{context, Environment};
+use minijinja::{context, Environment, Error as MiniJinjaError, Value as MiniJinjaValue};
+use serde_json::Value as SerdeJsonValue;
 use std::fs::{self};
 use std::path::PathBuf;
-use tempfile::tempdir; // TODO FIXME
-                       //
+use tempfile::tempdir;
 
 use crate::config::{
-    BASE_PARTS_DERIVATION, FLAKE_TEMPLATE, META_FILE, NAMEPLACEHOLDER, SELF_FLAKE_URI,
+    BASE_PARTS_DERIVATION, FLAKE_INPUTS_TEMPLATE, FLAKE_TEMPLATE, META_FILE, NAMEPLACEHOLDER,
+    SELF_FLAKE_URI,
 };
 use crate::parts::{FlakeContext, FlakePart, FlakePartsStore, FlakePartsStoreParseError};
 
@@ -55,6 +56,38 @@ enum InitStrategy {
     /// This will use a diff like patching algorithm and may fail
     /// in case of conflicts. (TODO not public yet)
     Merge,
+}
+
+// Function adapted for MiniJinjaValue
+fn format_module(value: MiniJinjaValue) -> Result<MiniJinjaValue, MiniJinjaError> {
+    // Convert from MiniJinjaValue to SerdeJsonValue
+    let serde_value: SerdeJsonValue = serde_json::from_str(&value.to_string())
+        .map_err(|e| MiniJinjaError::new(minijinja::ErrorKind::InvalidOperation, e.to_string()))?;
+
+    let mut output = String::new();
+    if let Some(obj) = serde_value.as_object() {
+        output.push_str("{\n");
+        if let Some(url) = obj.get("url").and_then(SerdeJsonValue::as_str) {
+            output.push_str(&format!("    url = \"{}\";\n", url));
+        }
+        if let Some(inputs) = obj.get("inputs").and_then(SerdeJsonValue::as_object) {
+            output.push_str("    inputs = {\n");
+            for (input_key, input_value) in inputs {
+                let follows = input_value
+                    .get("follows")
+                    .and_then(SerdeJsonValue::as_str)
+                    .unwrap_or("");
+                output.push_str(&format!(
+                    "        {}.follows = \"{}\";\n",
+                    input_key, follows
+                ));
+            }
+            output.push_str("    };\n");
+        }
+        output.push_str("}");
+    }
+    // Convert the output back to MiniJinjaValue
+    Ok(MiniJinjaValue::from(output))
 }
 
 pub fn parse_final_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
@@ -106,7 +139,7 @@ pub fn parse_final_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
                 })
             })
             .unique()
-            .filter(|uri| !proto_out_parts_uris.contains(uri))
+            .filter(|uri| !proto_out_parts_uris.contains(&uri))
             .collect::<Vec<_>>();
 
         proto_out_parts_uris.append(&mut dependencies);
@@ -115,11 +148,25 @@ pub fn parse_final_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
 
     let final_out_parts = proto_out_parts
         .filter(|(&ref store, &ref part)| {
-            final_parts_uris.contains(&format!("{}/{}", store.flake_uri, part.name))
+            final_parts_uris.contains(&&format!("{}/{}", store.flake_uri, part.name))
         })
-        // TODO cannot figure out how to handle this without cloning
+        // TODO One day, I will figure out how to not clone this
+        // fricker .... :copium:
         .map(|(_, part)| part.clone())
-        .collect::<Vec<FlakePart>>();
+        .collect::<Vec<_>>();
+
+    // in case an invalid part is passed
+    // let invalid_parts_uris = final_parts_uris
+    // in case an invalid part is passed
+    // let invalid_parts_uris = final_parts_uris
+    //     .iter()
+    //     .filter(|uri| {
+    //         !final_out_parts
+    //             .iter()
+    //             .any(|part| part.name == uri.split('/').last().unwrap())
+    // })
+    // .collect::<Vec<_>>();
+    //
 
     Ok(final_out_parts)
 }
@@ -163,16 +210,19 @@ pub fn init(mut cmd: InitCommand) -> Result<()> {
         let flake_context = FlakeContext::from_merged_metadata(metadata);
 
         let mut env = Environment::new();
+        env.add_function("format_module", format_module);
         env.add_template("flake.nix", &FLAKE_TEMPLATE).unwrap();
+        env.add_template("flake-inputs.nix", &FLAKE_INPUTS_TEMPLATE)
+            .unwrap();
         let tmpl = env.get_template("flake.nix").unwrap();
-        let rendered = tmpl.render(context!(context => flake_context))?;
+        let rendered = tmpl.render(context! { context => flake_context})?;
 
         fs::write(target_path.join("flake.nix"), rendered)?;
     }
 
     // This becomes None when `.`, `../`,etc... is passed
     if let Some(name) = cmd.path.file_name() {
-        let name = name.to_str().unwrap();
+        let name = name.to_str().unwrap(); // TODO unwrap?
         regex_in_dir_recursive(target_path.to_str().unwrap(), &NAMEPLACEHOLDER, name)?;
     }
 

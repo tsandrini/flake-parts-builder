@@ -1,7 +1,7 @@
 _: {
   description = "shells";
 
-  inputs = {  };
+  inputs = { };
 
   conflicts = [ "devenv" ];
   extraTrustedPublicKeys = [ ];
