@@ -2,8 +2,7 @@ use clap::{Args, ValueEnum};
 use color_eyre::eyre::Result;
 use fs_extra::dir::{self, CopyOptions};
 use itertools::Itertools;
-use minijinja::{context, Environment, Error as MiniJinjaError, Value as MiniJinjaValue};
-use serde_json::Value as SerdeJsonValue;
+use minijinja::{context, Environment};
 use std::fs::{self};
 use std::path::PathBuf;
 use tempfile::tempdir;
@@ -56,38 +55,6 @@ enum InitStrategy {
     /// This will use a diff like patching algorithm and may fail
     /// in case of conflicts. (TODO not public yet)
     Merge,
-}
-
-// Function adapted for MiniJinjaValue
-fn format_module(value: MiniJinjaValue) -> Result<MiniJinjaValue, MiniJinjaError> {
-    // Convert from MiniJinjaValue to SerdeJsonValue
-    let serde_value: SerdeJsonValue = serde_json::from_str(&value.to_string())
-        .map_err(|e| MiniJinjaError::new(minijinja::ErrorKind::InvalidOperation, e.to_string()))?;
-
-    let mut output = String::new();
-    if let Some(obj) = serde_value.as_object() {
-        output.push_str("{\n");
-        if let Some(url) = obj.get("url").and_then(SerdeJsonValue::as_str) {
-            output.push_str(&format!("    url = \"{}\";\n", url));
-        }
-        if let Some(inputs) = obj.get("inputs").and_then(SerdeJsonValue::as_object) {
-            output.push_str("    inputs = {\n");
-            for (input_key, input_value) in inputs {
-                let follows = input_value
-                    .get("follows")
-                    .and_then(SerdeJsonValue::as_str)
-                    .unwrap_or("");
-                output.push_str(&format!(
-                    "        {}.follows = \"{}\";\n",
-                    input_key, follows
-                ));
-            }
-            output.push_str("    };\n");
-        }
-        output.push_str("}");
-    }
-    // Convert the output back to MiniJinjaValue
-    Ok(MiniJinjaValue::from(output))
 }
 
 pub fn parse_final_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
@@ -210,7 +177,6 @@ pub fn init(mut cmd: InitCommand) -> Result<()> {
         let flake_context = FlakeContext::from_merged_metadata(metadata);
 
         let mut env = Environment::new();
-        env.add_function("format_module", format_module);
         env.add_template("flake.nix", &FLAKE_TEMPLATE).unwrap();
         env.add_template("flake-inputs.nix", &FLAKE_INPUTS_TEMPLATE)
             .unwrap();
