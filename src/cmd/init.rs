@@ -5,7 +5,7 @@ use itertools::Itertools;
 use minijinja::{context, Environment};
 use std::fs::{self};
 use std::path::PathBuf;
-use tempfile::tempdir;
+use tempfile::{tempdir, TempDir};
 
 use crate::config::{
     BASE_PARTS_DERIVATION, FLAKE_INPUTS_TEMPLATE, FLAKE_TEMPLATE, META_FILE, NAMEPLACEHOLDER,
@@ -57,7 +57,7 @@ enum InitStrategy {
     Merge,
 }
 
-pub fn parse_final_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
+fn parse_final_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
     // NOTE
     // 1. Load all FlakePartsStores
     // 2. Create an iterator over all parts (don't collect them yet)
@@ -122,20 +122,52 @@ pub fn parse_final_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
         .map(|(_, part)| part.clone())
         .collect::<Vec<_>>();
 
-    // in case an invalid part is passed
-    // let invalid_parts_uris = final_parts_uris
-    // in case an invalid part is passed
-    // let invalid_parts_uris = final_parts_uris
-    //     .iter()
-    //     .filter(|uri| {
-    //         !final_out_parts
-    //             .iter()
-    //             .any(|part| part.name == uri.split('/').last().unwrap())
-    // })
-    // .collect::<Vec<_>>();
-    //
-
+    // TODO check conflicts
     Ok(final_out_parts)
+}
+
+fn render_flake_nix(flake_context: &FlakeContext) -> Result<String> {
+    let mut env = Environment::new();
+    env.add_template("flake.nix", &FLAKE_TEMPLATE).unwrap();
+    env.add_template("flake-inputs.nix", &FLAKE_INPUTS_TEMPLATE)
+        .unwrap();
+    let tmpl = env.get_template("flake.nix").unwrap();
+    let rendered = tmpl.render(context! { context => flake_context})?;
+    Ok(rendered)
+}
+
+fn prepare_tmpdir(
+    tmpdir: &TempDir,
+    parts: &Vec<FlakePart>,
+    target_name: Option<&str>,
+) -> Result<()> {
+    let tmp_path = tmpdir.path();
+    for part in parts {
+        dir::copy(
+            &part.nix_store_path,
+            &tmp_path,
+            &CopyOptions::new().content_only(true).skip_exist(true),
+        )?;
+    }
+    std::fs::remove_file(tmp_path.join(META_FILE))?;
+    reset_permissions(tmp_path.to_str().unwrap())?;
+
+    {
+        let flake_context = {
+            let metadata = parts.iter().map(|part| &part.metadata).collect::<Vec<_>>();
+            FlakeContext::from_merged_metadata(metadata)
+        };
+
+        let rendered = render_flake_nix(&flake_context)?;
+        fs::write(tmp_path.join("flake.nix"), rendered)?;
+    }
+
+    // This becomes None when `.`, `../`,etc... is passed
+    if let Some(name) = target_name {
+        regex_in_dir_recursive(tmp_path.to_str().unwrap(), &NAMEPLACEHOLDER, name)?;
+    }
+
+    Ok(())
 }
 
 pub fn init(mut cmd: InitCommand) -> Result<()> {
@@ -150,50 +182,17 @@ pub fn init(mut cmd: InitCommand) -> Result<()> {
         SELF_FLAKE_URI, BASE_PARTS_DERIVATION
     ));
 
-    let final_parts = parse_final_parts(&cmd)?;
+    let parts = parse_final_parts(&cmd)?;
 
     if !cmd.path.exists() {
         dir::create_all(&cmd.path, false)?;
     }
 
-    let target = tempdir()?;
-    let target_path = target.path();
-    for part in &final_parts {
-        dir::copy(
-            &part.nix_store_path,
-            &target_path,
-            &CopyOptions::new().content_only(true).skip_exist(true),
-        )?;
-    }
-    std::fs::remove_file(target.path().join(META_FILE))?;
-    reset_permissions(target.path().to_str().unwrap())?;
-
-    {
-        let metadata = final_parts
-            .iter()
-            .map(|part| &part.metadata)
-            .collect::<Vec<_>>();
-
-        let flake_context = FlakeContext::from_merged_metadata(metadata);
-
-        let mut env = Environment::new();
-        env.add_template("flake.nix", &FLAKE_TEMPLATE).unwrap();
-        env.add_template("flake-inputs.nix", &FLAKE_INPUTS_TEMPLATE)
-            .unwrap();
-        let tmpl = env.get_template("flake.nix").unwrap();
-        let rendered = tmpl.render(context! { context => flake_context})?;
-
-        fs::write(target_path.join("flake.nix"), rendered)?;
-    }
-
-    // This becomes None when `.`, `../`,etc... is passed
-    if let Some(name) = cmd.path.file_name() {
-        let name = name.to_str().unwrap(); // TODO unwrap?
-        regex_in_dir_recursive(target_path.to_str().unwrap(), &NAMEPLACEHOLDER, name)?;
-    }
+    let tmpdir = tempdir()?;
+    prepare_tmpdir(&tmpdir, &parts, cmd.path.file_name().unwrap().to_str())?;
 
     dir::copy(
-        &target_path,
+        &tmpdir,
         &cmd.path,
         &CopyOptions::new()
             .content_only(true)
