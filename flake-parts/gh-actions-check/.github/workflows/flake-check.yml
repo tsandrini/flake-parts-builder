@@ -1,0 +1,30 @@
+name: "Run `nix flake-check`"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, reopened, synchronize]
+  repository_dispatch:
+    types: [create-pull-request]
+
+jobs:
+  flake-check:
+    if: false
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checking out repository..."
+        uses: actions/checkout@v4
+
+      - name: "Installing and configuring the nix package manager..."
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: "Setting up magic-nix-cache..."
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: "Running `nix flake check`..."
+        run: nix flake check --show-trace --accept-flake-config
+
+      - name: "Checking flake inputs for stale & insecure nixpkgs versions..."
+        uses: DeterminateSystems/flake-checker-action@main
