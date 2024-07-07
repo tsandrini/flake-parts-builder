@@ -1,0 +1,13 @@
+image: nixos/nix:latest
+
+variables:
+  NIX_CONF_DIR: "/etc/nix"
+
+before_script:
+  - echo 'experimental-features = nix-command flakes' > $NIX_CONF_DIR/nix.conf
+
+flake-check:
+  script:
+    - nix flake check --show-trace --accept-flake-config
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_PIPELINE_SOURCE == "merge_request_event"'
