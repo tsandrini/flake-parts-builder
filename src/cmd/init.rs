@@ -1,14 +1,12 @@
 use clap::{Args, ValueEnum};
 use color_eyre::eyre::Result;
 use fs_extra::dir::{self, CopyOptions};
-use itertools::Itertools;
-use minijinja::{context, Environment};
-use std::fs::{self};
+use std::fs;
 use std::path::PathBuf;
 use tempfile::{tempdir, TempDir};
 
 use crate::config::{
-    BASE_PARTS_DERIVATION, FLAKE_INPUTS_TEMPLATE, FLAKE_TEMPLATE, META_FILE, NAMEPLACEHOLDER,
+    BASE_DERIVATION_NAME, FLAKE_INPUTS_TEMPLATE, FLAKE_TEMPLATE, META_FILE, NAMEPLACEHOLDER,
     SELF_FLAKE_URI,
 };
 use crate::parts::{FlakeContext, FlakePart, FlakePartsStore};
@@ -57,82 +55,105 @@ enum InitStrategy {
     Merge,
 }
 
-fn parse_final_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
-    // NOTE
-    // 1. Load all FlakePartsStores
-    // 2. Create an iterator over all parts (don't collect them yet)
-    // 3. Construct a final vec of all parts that should be used
-    //    a. First we parse the CLI parts
-    //    b. Then we iterate over those to add potential dependencies
-    //    c. Unique filter
-    //    d. Combine these two
-    // 4. We finally can create a vec of all parts that should be used
-    // 5. Collect! (profit)
+fn process_flake_string(target: &str, flake: &str, derivation: Option<&str>) -> String {
+    if target.contains('#') {
+        target.to_string()
+    } else if let Some(derivation) = derivation {
+        format!("{}#{}/{}", flake, derivation, target)
+    } else {
+        format!("{}/{}", flake, target)
+    }
+}
+
+// NOTE
+// 1. Load all FlakePartsStores
+// 2. Create an iterator over all parts (don't collect them yet)
+// 3. Construct a final vec of all parts that should be used
+//    a. First we parse the CLI parts
+//    b. Then we iterate over those to add potential dependencies
+//    c. Unique filter
+//    d. Combine these two
+// 4. We finally can create a vec of all parts that should be used
+// 5. Collect! (profit)
+fn parse_parts(cmd: &InitCommand) -> Result<Vec<FlakePart>> {
+    use std::collections::HashSet;
+
     let stores = cmd
         .parts_stores
         .iter()
         .map(|store| FlakePartsStore::from_flake_uri(&store))
-        .collect::<Result<Vec<FlakePartsStore>>>()?;
+        .collect::<Result<Vec<_>>>()?;
 
-    let proto_out_parts = stores
+    let all_parts_with_stores = stores
         .iter()
         .flat_map(|store| store.parts.iter().map(move |part| (store, part)));
 
-    let final_parts_uris = {
-        let mut proto_out_parts_uris = cmd
-            .parts
-            .clone()
-            .into_iter()
-            .map(|part| {
-                if part.contains('#') {
-                    part
-                } else {
-                    format!("{}#{}/{}", SELF_FLAKE_URI, BASE_PARTS_DERIVATION, part)
-                }
-            })
-            .collect::<Vec<_>>();
+    let user_required_parts_uris = cmd
+        .parts
+        .clone()
+        .into_iter()
+        .map(|part| process_flake_string(&part, &SELF_FLAKE_URI, Some(&BASE_DERIVATION_NAME)))
+        .collect::<Vec<_>>();
 
-        let mut dependencies = proto_out_parts
+    let parts_uniq_dependencies = {
+        let mut seen = HashSet::new();
+
+        all_parts_with_stores
             // NOTE we are traversing twice over the proto_out_parts
             // hence we need the iterator clone
             .clone()
             .flat_map(|(&ref store, &ref part)| {
-                part.metadata.dependencies.iter().map(|dep| {
-                    if dep.contains('#') {
-                        dep.to_string()
-                    } else {
-                        format!("{}/{}", store.flake_uri, dep)
-                    }
-                })
+                part.metadata
+                    .dependencies
+                    .iter()
+                    .map(|dep| process_flake_string(&dep, &store.flake_uri, None))
             })
-            .unique()
-            .filter(|uri| !proto_out_parts_uris.contains(&uri))
-            .collect::<Vec<_>>();
-
-        proto_out_parts_uris.append(&mut dependencies);
-        proto_out_parts_uris
+            .filter(|uri| seen.insert(uri.clone()))
+            .filter(|uri| !user_required_parts_uris.contains(&uri))
+            .collect::<Vec<_>>()
     };
 
-    let final_out_parts = proto_out_parts
+    let all_parts_uris = user_required_parts_uris
+        .iter()
+        .chain(parts_uniq_dependencies.iter())
+        .collect::<Vec<_>>();
+
+    let final_parts_with_stores = all_parts_with_stores
         .filter(|(&ref store, &ref part)| {
-            final_parts_uris.contains(&&format!("{}/{}", store.flake_uri, part.name))
+            all_parts_uris.contains(&&format!("{}/{}", store.flake_uri, part.name))
         })
-        // TODO One day, I will figure out how to not clone this
-        // fricker .... :copium:
-        .map(|(_, part)| part.clone())
+        .map(move |(store, part)| (store, part.to_owned()))
+        .collect::<Vec<_>>();
+
+    validate_parsed_parts(&user_required_parts_uris, &final_parts_with_stores)?;
+
+    let parts = final_parts_with_stores
+        .iter()
+        .map(move |(_, part)| part.to_owned())
         .collect::<Vec<_>>();
 
     // TODO check conflicts
-    Ok(final_out_parts)
+    Ok(parts)
+}
+
+// Assuming `parse_to_flake_uri` and similar utility functions exist to handle URI parsing.
+
+fn validate_parsed_parts(
+    user_required_parts_uris: &Vec<String>,
+    result: &Vec<(&FlakePartsStore, FlakePart)>,
+) -> Result<()> {
+    Ok(())
 }
 
 fn render_flake_nix(flake_context: &FlakeContext) -> Result<String> {
+    use minijinja::{context, Environment};
+
     let mut env = Environment::new();
     env.add_template("flake.nix", &FLAKE_TEMPLATE).unwrap();
     env.add_template("flake-inputs.nix", &FLAKE_INPUTS_TEMPLATE)
         .unwrap();
     let tmpl = env.get_template("flake.nix").unwrap();
-    let rendered = tmpl.render(context! { context => flake_context})?;
+    let rendered = tmpl.render(context! ( context => flake_context))?;
     Ok(rendered)
 }
 
@@ -149,6 +170,7 @@ fn prepare_tmpdir(
             &CopyOptions::new().content_only(true).skip_exist(true),
         )?;
     }
+    // TODO fails if no META_FILE is present
     std::fs::remove_file(tmp_path.join(META_FILE))?;
     reset_permissions(tmp_path.to_str().unwrap())?;
 
@@ -157,6 +179,7 @@ fn prepare_tmpdir(
             let metadata = parts.iter().map(|part| &part.metadata).collect::<Vec<_>>();
             FlakeContext::from_merged_metadata(metadata)
         };
+        println!("flake_context: {:?}", flake_context);
 
         let rendered = render_flake_nix(&flake_context)?;
         fs::write(tmp_path.join("flake.nix"), rendered)?;
@@ -173,16 +196,16 @@ fn prepare_tmpdir(
 pub fn init(mut cmd: InitCommand) -> Result<()> {
     if !cmd.disable_base_parts {
         cmd.parts_stores
-            .push(format!("{}#{}", SELF_FLAKE_URI, BASE_PARTS_DERIVATION));
+            .push(format!("{}#{}", SELF_FLAKE_URI, BASE_DERIVATION_NAME));
     }
 
     // NOTE this one is required even if you disable base store parts
     cmd.parts.push(format!(
         "{}#{}/_bootstrap",
-        SELF_FLAKE_URI, BASE_PARTS_DERIVATION
+        SELF_FLAKE_URI, BASE_DERIVATION_NAME
     ));
 
-    let parts = parse_final_parts(&cmd)?;
+    let parts = parse_parts(&cmd)?;
 
     if !cmd.path.exists() {
         dir::create_all(&cmd.path, false)?;
