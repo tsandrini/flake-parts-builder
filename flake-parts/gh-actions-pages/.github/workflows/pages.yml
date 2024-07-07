@@ -1,0 +1,48 @@
+name: "Deploy static content to GitHub Pages"
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run
+# in-progress and latest queued. However, do NOT cancel in-progress runs as
+# we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  pages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checking out repository..."
+        uses: actions/checkout@v4
+
+      - name: "Installing and configuring the nix package manager..."
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: "Setting up magic-nix-cache..."
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: "Building static content using `nix build .#pages`..."
+        run: nix build .#pages
+
+      - name: "Setting up GitHub Pages..."
+        uses: actions/configure-pages@v3
+
+      - name: "Uploading static content..."
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: "result"
+
+      - name: "Deploying static content to GitHub Pages..."
+        id: deployment
+        uses: actions/deploy-pages@v2
