@@ -1,7 +1,8 @@
-  {# NOTE over time the community has developed a certain formatting
+ {# NOTE over time the community has developed a certain formatting
      style for flake.nix inputs that tends to be shared among most
      of us, which is not a simple "JSON"-like dump. This is why I
      opted to manually parse the JSON dump.  #}
+  {%- if context.inputs is defined %}
   {%- for input_name in context.inputs -%}
     {% set input = context.inputs[input_name] %}
     {%- if (not input.inputs is defined) and (not input.flake is defined) %}
@@ -20,3 +21,4 @@
     };
     {% endif -%}
   {%- endfor -%}
+  {% endif -%}

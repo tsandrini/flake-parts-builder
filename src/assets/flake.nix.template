@@ -8,7 +8,7 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     # --- YOUR DEPENDENCIES ---
-    {%- include "flake-inputs.nix" -%}
+    {%- include "flake-inputs.nix" ignore missing -%}
   };
 
   # NOTE Here you can add additional binary cache substituers that you trust.
