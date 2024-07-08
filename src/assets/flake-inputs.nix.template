@@ -2,23 +2,23 @@
      style for flake.nix inputs that tends to be shared among most
      of us, which is not a simple "JSON"-like dump. This is why I
      opted to manually parse the JSON dump.  #}
-  {%- if context.inputs is defined %}
-  {%- for input_name in context.inputs -%}
-    {% set input = context.inputs[input_name] %}
-    {%- if (not input.inputs is defined) and (not input.flake is defined) %}
+{%- if context.inputs is defined %}
+{%- for input_name in context.inputs %}
+  {%- set input = context.inputs[input_name] -%}
+  {%- if not input.inputs is defined and not input.flake is defined %}
     {{ input_name }}.url = "{{ input.url }}";
-    {% else %}
+  {%- else %}
     {{ input_name }} = {
       url = "{{ input.url }}";
       {%- if input.inputs is defined %}
       {%- for follow_name in input.inputs %}
       inputs.{{ follow_name }}.follows = "{{ input.inputs[follow_name].follows }}";
       {%- endfor %}
-      {% endif -%}
+      {%- endif %}
       {%- if input.flake is defined %}
       flake = {{ input.flake }};
-      {% endif -%}
+      {%- endif %}
     };
-    {% endif -%}
-  {%- endfor -%}
-  {% endif -%}
+  {%- endif %}
+{%- endfor %}
+{% endif %}

@@ -22,7 +22,7 @@
       {% for key in context.extra_trusted_public_keys -%}
       # "{{ key }}"
       {% endfor -%}
-      {%- endif %}
+      {% endif -%}
     ];
     extra-substituters = [
       # "https://cache.nixos.org"
@@ -31,7 +31,7 @@
       {% for substituter in context.extra_substituters -%}
       # "{{ substituter }}"
       {% endfor -%}
-      {%- endif %}
+      {% endif -%}
     ];
   };
 
