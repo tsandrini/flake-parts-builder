@@ -36,7 +36,14 @@ pub fn list(mut cmd: ListCommand) -> Result<()> {
             .parts
             .iter()
             .try_for_each(|part| {
-                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)))?;
+                // Visually distinguish collections
+                let color = if part.name.contains('+') {
+                    Color::Cyan
+                } else {
+                    Color::Red
+                };
+
+                stdout.set_color(ColorSpec::new().set_fg(Some(color)))?;
 
                 write!(&mut stdout, "  - {}: ", part.name)?;
 
