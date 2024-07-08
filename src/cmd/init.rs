@@ -36,7 +36,7 @@ pub struct InitCommand {
     #[arg(long = "disable-base", default_value_t = false)]
     disable_base_parts: bool,
 
-    /// Force the initialization even in case of conflicts
+    /// Force overwriting of local files
     #[arg(long = "force", default_value_t = false)]
     force: bool,
 }
@@ -161,13 +161,18 @@ fn prepare_tmpdir(
     tmpdir: &TempDir,
     parts: &Vec<FlakePart>,
     target_name: Option<&str>,
+    init_strategy: &InitStrategy,
 ) -> Result<()> {
+    // TODO MERGE STRATEGY
     let tmp_path = tmpdir.path();
     for part in parts {
         dir::copy(
             &part.nix_store_path,
             &tmp_path,
-            &CopyOptions::new().content_only(true).skip_exist(true),
+            &CopyOptions::new()
+                .content_only(true)
+                .skip_exist(init_strategy == &InitStrategy::Skip)
+                .overwrite(init_strategy == &InitStrategy::Overwrite),
         )?;
     }
     // TODO fails if no META_FILE is present
@@ -212,15 +217,20 @@ pub fn init(mut cmd: InitCommand) -> Result<()> {
     }
 
     let tmpdir = tempdir()?;
-    prepare_tmpdir(&tmpdir, &parts, cmd.path.file_name().unwrap().to_str())?;
+    prepare_tmpdir(
+        &tmpdir,
+        &parts,
+        cmd.path.file_name().unwrap().to_str(),
+        &cmd.strategy,
+    )?;
 
     dir::copy(
         &tmpdir,
         &cmd.path,
         &CopyOptions::new()
             .content_only(true)
-            .skip_exist(cmd.strategy == InitStrategy::Skip)
-            .overwrite(cmd.strategy == InitStrategy::Overwrite),
+            .skip_exist(!cmd.force)
+            .overwrite(cmd.force),
     )?;
 
     Ok(())
