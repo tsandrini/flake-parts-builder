@@ -66,7 +66,7 @@
                 filter = path: type: !(builtins.elem (/. + path) [ ./flake-parts ]);
               };
 
-              cargoSha256 = "sha256-6rVpTWcGX+sNCEq14AEkqC8Ui+tnso50ZXMv28evMxg=";
+              cargoSha256 = "sha256-yWViuPayJX1WFZbhMQPAQJoRUDJohF7NHGMe/y84TdI=";
 
               buildInputs = with pkgs; [ nixfmt-rfc-style ];
             };
