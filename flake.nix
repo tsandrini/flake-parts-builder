@@ -12,6 +12,13 @@
     inputs@{ flake-parts, ... }:
     let
       inherit (inputs.nixpkgs) lib;
+
+      tsandrini = {
+        email = "tomas.sandrini@seznam.cz";
+        name = "Tomáš Sandrini";
+        github = "tsandrini";
+        githubId = 21975189;
+      };
     in
     flake-parts.lib.mkFlake { inherit inputs; } {
 
@@ -61,14 +68,36 @@
               name = "flake-parts-builder";
               version = "1.0.0";
 
-              src = builtins.path {
-                path = ./.;
-                filter = path: type: !(builtins.elem (/. + path) [ ./flake-parts ]);
-              };
+              src = [
+                ./src
+                ./Cargo.toml
+                ./Cargo.lock
+              ];
+
+              unpackPhase = ''
+                runHook preUnpack
+                for srcItem in $src; do
+                  if [ -d "$srcItem" ]; then
+                    cp -r "$srcItem" $(stripHash "$srcItem")
+                  else
+                    cp "$srcItem" $(stripHash "$srcItem")
+                  fi
+                done
+                runHook postUnpack
+              '';
 
               cargoSha256 = "sha256-yWViuPayJX1WFZbhMQPAQJoRUDJohF7NHGMe/y84TdI=";
 
               buildInputs = with pkgs; [ nixfmt-rfc-style ];
+
+              meta = with pkgs.lib; {
+                homepage = "https://github.com/tsandrini/flake-parts-builder";
+                description = "Nix flakes interactive template builder based on flake-parts written in Rust.";
+                license = licenses.mit;
+                platforms = [ system ];
+                maintainers = [ tsandrini ];
+                mainProgram = "flake-parts-builder";
+              };
             };
 
             flake-parts = pkgs.stdenv.mkDerivation {
@@ -78,6 +107,7 @@
 
               dontConfigure = true;
               dontBuild = true;
+              dontCheck = true;
 
               installPhase = ''
                 mkdir -p $out/flake-parts
@@ -85,11 +115,11 @@
               '';
 
               meta = with pkgs.lib; {
-                homepage = "TODO";
-                description = "TODO";
+                homepage = "https://github.com/tsandrini/flake-parts-builder";
+                description = "The base collection of flake-parts for the flake-parts-builder.";
                 license = licenses.mit;
                 platforms = [ system ];
-                maintainers = [ ];
+                maintainers = [ tsandrini ];
               };
             };
           };
