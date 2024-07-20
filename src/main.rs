@@ -1,19 +1,22 @@
+//! Nix flakes interactive template builder based on flake-parts written
+//! in Rust.
 use clap::{Parser, Subcommand};
 use color_eyre::eyre::Result;
 
-mod cmd;
-mod config;
-mod fs_utils;
-mod nix;
-mod parts;
+pub mod cmd;
+pub mod config;
+pub mod fs_utils;
+pub mod nix;
+pub mod parts;
 
 use crate::cmd::init::{init, InitCommand};
 use crate::cmd::list::{list, ListCommand};
 
+/// Nix flakes interactive template builder based on flake-parts written
+/// in Rust.
 #[derive(Debug, Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about, long_about = None, verbatim_doc_comment)]
 struct Cli {
-    /// Henlo
     #[command(subcommand)]
     command: Commands,
 
@@ -24,7 +27,6 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    /// Init a new flake project
     Init(InitCommand),
 
     /// List all available flake-parts

@@ -28,3 +28,11 @@ pub fn eval_meta_file(path: &PathBuf) -> Result<String> {
     let output = String::from_utf8(nix_eval.stdout)?;
     Ok(output)
 }
+
+pub fn nixfmt_file(path: &PathBuf) -> Result<()> {
+    let path = path.to_str().unwrap(); // TODO
+
+    Command::new("nixfmt").args([&path]).output()?;
+
+    Ok(())
+}

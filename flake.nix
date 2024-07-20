@@ -19,12 +19,33 @@
         github = "tsandrini";
         githubId = 21975189;
       };
+
+      mkFlakeParts =
+        args@{ stdenv, ... }:
+        let
+          finalArgs = {
+            name = "flake-parts";
+            version = "1.0.0";
+
+            dontConfigure = true;
+            dontBuild = true;
+            dontCheck = true;
+
+            installPhase = ''
+              mkdir -p $out/flake-parts
+              cp -rv $src/* $out/flake-parts
+            '';
+          } // args;
+        in
+        stdenv.mkDerivation finalArgs;
     in
     flake-parts.lib.mkFlake { inherit inputs; } {
 
       systems = import inputs.systems;
 
       flake.lib = rec {
+        inherit mkFlakeParts;
+
         flatten = attrs: lib.collect (x: !lib.isAttrs x) attrs;
 
         mapFilterAttrs =
@@ -118,20 +139,13 @@
                     lib,
                     stdenv,
                     tsandrini,
+                    mkFlakeParts,
                   }:
-                  stdenv.mkDerivation {
+                  mkFlakeParts {
+                    inherit stdenv;
                     name = "flake-parts";
                     version = "1.0.0";
                     src = ./flake-parts;
-
-                    dontConfigure = true;
-                    dontBuild = true;
-                    dontCheck = true;
-
-                    installPhase = ''
-                      mkdir -p $out/flake-parts
-                      cp -rv $src/* $out/flake-parts
-                    '';
 
                     meta = with lib; {
                       homepage = "https://github.com/tsandrini/flake-parts-builder";
@@ -142,7 +156,33 @@
                     };
                   };
               in
-              pkgs.callPackage package { inherit tsandrini; };
+              pkgs.callPackage package { inherit tsandrini mkFlakeParts; };
+
+            flake-parts-bootstrap =
+              let
+                package =
+                  {
+                    lib,
+                    stdenv,
+                    tsandrini,
+                    mkFlakeParts,
+                  }:
+                  mkFlakeParts {
+                    inherit stdenv;
+                    name = "flake-parts-bootstrap";
+                    version = "1.0.0";
+                    src = ./flake-parts-bootstrap;
+
+                    meta = with lib; {
+                      homepage = "https://github.com/tsandrini/flake-parts-builder";
+                      description = "The base collection of flake-parts for the flake-parts-builder.";
+                      license = licenses.mit;
+                      platforms = [ system ];
+                      maintainers = [ tsandrini ];
+                    };
+                  };
+              in
+              pkgs.callPackage package { inherit tsandrini mkFlakeParts; };
           };
 
           devShells = rec {

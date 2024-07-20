@@ -1,3 +1,4 @@
+//! Provides a way to parse and store flake parts metadata
 use color_eyre::eyre::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
@@ -12,6 +13,35 @@ pub struct FlakePart {
     pub name: String,
     pub nix_store_path: PathBuf,
     pub metadata: FlakePartMetadata,
+}
+
+// TODO helper struct to evade overcomplicated lifetimes
+// beware that the store references will live only as long
+// as the original function call
+#[derive(Debug)]
+pub struct FlakePartTuple<'a> {
+    pub store: &'a FlakePartsStore,
+    pub part: FlakePart,
+}
+
+pub fn normalize_flake_string(target: &str, flake: &str, derivation: Option<&str>) -> String {
+    if target.contains('#') {
+        target.to_string()
+    } else if let Some(derivation) = derivation {
+        format!("{}#{}/{}", flake, derivation, target)
+    } else {
+        format!("{}/{}", flake, target)
+    }
+}
+
+impl<'a> FlakePartTuple<'a> {
+    pub fn new(store: &'a FlakePartsStore, part: FlakePart) -> Self {
+        Self { store, part }
+    }
+
+    pub fn to_flake_uri(&self, derivation: Option<&str>) -> String {
+        normalize_flake_string(&self.part.name, &self.store.flake_uri, derivation)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
