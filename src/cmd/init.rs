@@ -60,7 +60,8 @@ pub struct InitCommand {
     /// by this repo.
     ///
     /// NOTE: _bootstrap part is always included for the project to
-    /// properly function
+    /// properly function (if you really need to you can override the files
+    /// with your own versions)
     #[arg(long = "disable-base", default_value_t = false, verbatim_doc_comment)]
     disable_base_parts: bool,
 
@@ -147,14 +148,10 @@ fn parse_required_parts_tuples<'a>(
             .iter()
             .map(move |part| FlakePartTuple::new(store, part.to_owned()))
     });
-    /*     let user_required_parts_uris = cmd
-    .parts
-    .clone()
-    .into_iter()
-    .map(|part| normalize_flake_string(&part, &SELF_FLAKE_URI, Some(&BASE_DERIVATION_NAME)))
-    .collect::<Vec<_>>() */
 
     let user_req_flake_strings = cmd.parts.clone();
+
+    println!("User required parts: {:?}", user_req_flake_strings);
 
     let parts_uniq_dependencies = {
         let mut seen = HashSet::new();
@@ -207,7 +204,11 @@ fn parse_required_parts_tuples<'a>(
     println!("Final parts: {:?}", final_parts_uris);
 
     check_for_missing_parts(&user_req_flake_strings, &final_parts_tuples)?;
-    check_for_conflicts(&final_parts_tuples)?;
+
+    // TODO probably print that we are ignoring conflicts
+    if !cmd.ignore_conflicts {
+        check_for_conflicts(&final_parts_tuples)?;
+    }
 
     Ok(final_parts_tuples)
 }
@@ -240,7 +241,13 @@ fn check_for_missing_parts(
     }
 }
 
-fn check_for_conflicts(parts_tuples: &Vec<FlakePartTuple>) -> Result<()> {
+#[derive(Error, Debug)]
+pub enum ConflictsCheckError {
+    #[error("You have requested parts that conflict with each other: {0:?} If you wish to ignore these conflicts use the --ignore-conflicts flag")]
+    ConflictingPartsError(Vec<String>),
+}
+
+fn check_for_conflicts(parts_tuples: &Vec<FlakePartTuple>) -> Result<(), ConflictsCheckError> {
     let conflicting_parts_uris = parts_tuples
         .iter()
         .flat_map(|part_tuple| {
@@ -256,8 +263,12 @@ fn check_for_conflicts(parts_tuples: &Vec<FlakePartTuple>) -> Result<()> {
         .collect::<Vec<_>>();
 
     if conflicting_parts.len() > 0 {
-        println!("Conflicting parts: {:?}", conflicting_parts);
-        Ok(()) // TODO error
+        Err(ConflictsCheckError::ConflictingPartsError(
+            conflicting_parts
+                .iter()
+                .map(|&part_tuple| part_tuple.to_flake_uri(None))
+                .collect(),
+        ))
     } else {
         Ok(())
     }
