@@ -3,7 +3,7 @@ use color_eyre::eyre::Result;
 use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
-use crate::config::SELF_FLAKE_URI;
+use crate::config::{BOOTSTRAP_DERIVATION_NAME, SELF_FLAKE_URI};
 use crate::parts::FlakePartsStore;
 
 #[derive(Debug, Args)]
@@ -24,6 +24,10 @@ pub fn list(mut cmd: ListCommand) -> Result<()> {
         cmd.parts_stores
             .push(format!("{}#flake-parts", SELF_FLAKE_URI));
     }
+
+    // NOTE this one is required even if you disable base store parts
+    cmd.parts_stores
+        .push(format!("{}#{}", SELF_FLAKE_URI, BOOTSTRAP_DERIVATION_NAME));
 
     let mut stdout = StandardStream::stdout(ColorChoice::Auto);
 
