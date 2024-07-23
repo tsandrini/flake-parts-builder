@@ -43,7 +43,7 @@ impl<'a> FlakePartTuple<'a> {
         normalize_flake_string(&self.part.name, &self.store.flake_uri, derivation)
     }
 
-    pub fn resolve_dependencies(
+    pub fn resolve_dependencies_of(
         parts_tuples_pool: &Vec<FlakePartTuple>,
         start_indices: Vec<usize>,
     ) -> Vec<String> {
@@ -70,6 +70,46 @@ impl<'a> FlakePartTuple<'a> {
 
         resolved_dependencies.into_iter().collect()
     }
+
+    pub fn find_conflicting_parts_in(
+        parts_tuples: &'a Vec<FlakePartTuple>,
+    ) -> Vec<&'a FlakePartTuple<'a>> {
+        let conflicting_parts_uris = parts_tuples
+            .iter()
+            .flat_map(|part_tuple| {
+                part_tuple.part.metadata.conflicts.iter().map(|conflict| {
+                    normalize_flake_string(&conflict, &part_tuple.store.flake_uri, None)
+                })
+            })
+            .collect::<Vec<_>>();
+
+        let conflicting_parts: Vec<&'a FlakePartTuple> = parts_tuples
+            .iter()
+            .filter(|&uri| conflicting_parts_uris.contains(&uri.to_flake_uri(None)))
+            .collect::<Vec<_>>();
+
+        conflicting_parts
+    }
+
+    pub fn find_missing_parts_in<'b>(
+        parts_tuples: &Vec<FlakePartTuple>,
+        required_parts: &'b Vec<String>,
+    ) -> Vec<&'b String> {
+        required_parts
+            .iter()
+            .filter(|&uri| {
+                !parts_tuples.iter().any(|part_tuple| {
+                    uri == &part_tuple.to_flake_uri(None) || uri == &part_tuple.part.name
+                })
+            })
+            .collect::<Vec<_>>()
+    }
+
+    pub fn find_unresolved_dependencies_in(
+        parts_tuples: &'a Vec<FlakePartTuple>,
+    ) -> Vec<&'a FlakePartTuple<'a>> {
+        todo!("implement")
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -84,7 +124,7 @@ pub struct FlakePartMetadata {
     pub dependencies: Vec<String>,
 
     #[serde(default)]
-    pub conflicts: Vec<String>, // TODg
+    pub conflicts: Vec<String>,
 
     #[serde(rename = "extraTrustedPublicKeys", default)]
     extra_trusted_public_keys: Vec<String>,

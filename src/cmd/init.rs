@@ -12,7 +12,7 @@ use crate::config::{
 };
 use crate::fs_utils::{regex_in_dir_recursive, reset_permissions};
 use crate::nix::nixfmt_file;
-use crate::parts::{normalize_flake_string, FlakeContext, FlakePartTuple, FlakePartsStore};
+use crate::parts::{FlakeContext, FlakePartTuple, FlakePartsStore};
 
 /// Initialize a new flake-parts projects using the builder.
 #[derive(Debug, Args)]
@@ -99,6 +99,15 @@ enum InitStrategy {
     Merge,
 }
 
+#[derive(Error, Debug)]
+pub enum PartsTuplesParsingError {
+    #[error("The following user required parts couldn't be resolved: {0:?}")]
+    MissingPartsError(Vec<String>),
+
+    #[error("You have requested parts that conflict with each other: {0:?} If you wish to ignore these conflicts use the --ignore-conflicts flag")]
+    ConflictingPartsError(Vec<String>),
+}
+
 // NOTE
 // 1. Load all FlakePartsStores
 // 2. Create an iterator over all parts (don't collect them yet)
@@ -112,7 +121,7 @@ enum InitStrategy {
 fn parse_required_parts_tuples<'a>(
     cmd: &InitCommand,
     stores: &'a Vec<FlakePartsStore>,
-) -> Result<Vec<FlakePartTuple<'a>>> {
+) -> Result<Vec<FlakePartTuple<'a>>, PartsTuplesParsingError> {
     let all_parts_tuples = stores
         .iter()
         .flat_map(|store| {
@@ -140,7 +149,7 @@ fn parse_required_parts_tuples<'a>(
             .map(|(index, _)| index)
             .collect();
 
-        FlakePartTuple::resolve_dependencies(&all_parts_tuples, start_indices)
+        FlakePartTuple::resolve_dependencies_of(&all_parts_tuples, start_indices)
     };
 
     let all_req_flake_strings = user_req_flake_strings
@@ -167,76 +176,31 @@ fn parse_required_parts_tuples<'a>(
 
     println!("Final parts: {:?}", final_parts_uris);
 
-    // TODO also check for unresolved dependencies (due to not including them)
-    check_for_missing_parts(&user_req_flake_strings, &final_parts_tuples)?;
+    let missing_parts =
+        FlakePartTuple::find_missing_parts_in(&final_parts_tuples, &user_req_flake_strings);
+
+    if missing_parts.len() > 0 {
+        return Err(PartsTuplesParsingError::MissingPartsError(
+            missing_parts.into_iter().cloned().collect::<Vec<_>>(),
+        ));
+    }
 
     // TODO probably print that we are ignoring conflicts
     if !cmd.ignore_conflicts {
-        check_for_conflicts(&final_parts_tuples)?;
+        // check_for_conflicts(&final_parts_tuples)?;
+        let conflicts = FlakePartTuple::find_conflicting_parts_in(&final_parts_tuples);
+
+        if conflicts.len() > 0 {
+            return Err(PartsTuplesParsingError::ConflictingPartsError(
+                conflicts
+                    .into_iter()
+                    .map(|flake_part| flake_part.to_flake_uri(None))
+                    .collect::<Vec<_>>(),
+            ));
+        }
     }
 
     Ok(final_parts_tuples)
-}
-
-#[derive(Error, Debug)]
-pub enum MissingPartsCheckError {
-    #[error("The following user required parts couldn't be resolved: {0:?}")]
-    MissingPartsError(Vec<String>),
-}
-
-fn check_for_missing_parts(
-    user_required_parts_uris: &Vec<String>,
-    final_parts_tuples: &Vec<FlakePartTuple>,
-) -> Result<(), MissingPartsCheckError> {
-    let missing_parts = user_required_parts_uris
-        .iter()
-        .filter(|&uri| {
-            !final_parts_tuples.iter().any(|part_tuple| {
-                uri == &part_tuple.to_flake_uri(None) || uri == &part_tuple.part.name
-            })
-        })
-        .collect::<Vec<_>>();
-
-    if missing_parts.len() > 0 {
-        Err(MissingPartsCheckError::MissingPartsError(
-            missing_parts.into_iter().cloned().collect(),
-        ))
-    } else {
-        Ok(())
-    }
-}
-
-#[derive(Error, Debug)]
-pub enum ConflictsCheckError {
-    #[error("You have requested parts that conflict with each other: {0:?} If you wish to ignore these conflicts use the --ignore-conflicts flag")]
-    ConflictingPartsError(Vec<String>),
-}
-
-fn check_for_conflicts(parts_tuples: &Vec<FlakePartTuple>) -> Result<(), ConflictsCheckError> {
-    let conflicting_parts_uris = parts_tuples
-        .iter()
-        .flat_map(|part_tuple| {
-            part_tuple.part.metadata.conflicts.iter().map(|conflict| {
-                normalize_flake_string(&conflict, &part_tuple.store.flake_uri, None)
-            })
-        })
-        .collect::<Vec<_>>();
-
-    let conflicting_parts = parts_tuples
-        .iter()
-        .filter(|&uri| conflicting_parts_uris.contains(&uri.to_flake_uri(None)))
-        .collect::<Vec<_>>();
-
-    if conflicting_parts.len() > 0 {
-        Err(ConflictsCheckError::ConflictingPartsError(
-            conflicting_parts
-                .iter()
-                .map(|&part_tuple| part_tuple.to_flake_uri(None))
-                .collect(),
-        ))
-    } else {
-        Ok(())
-    }
 }
 
 fn render_flake_nix(flake_context: &FlakeContext) -> Result<String> {
