@@ -99,33 +99,6 @@ enum InitStrategy {
     Merge,
 }
 
-/* fn rec_traverse_dependencies(
-    dep: &FlakePart,
-    parent_uri: String,
-    all_parts_with_stores: &Vec<(&FlakePartsStore, FlakePart)>,
-) -> Vec<String> {
-    dep.metadata
-        .dependencies
-        .iter()
-        .fold(vec![], |mut acc, dep| {
-            // NOTE Either the dependency is specified with a full URI or
-            // we use the current local store flake URI
-            let dep_uri = process_flake_string(dep, &parent_uri, None);
-            let dep_part = all_parts_with_stores
-                .iter()
-                .find(|(_, part)| part.name == dep.to_string())
-                .unwrap(); // TODO
-
-            // let mut deps =
-            //     rec_traverse_dependencies(&dep_part, Some(dep.to_string()), all_parts_with_stores);
-            // deps.push(dep_uri);
-            // acc.extend(deps);
-            acc
-        });
-
-    vec![]
-} */
-
 // NOTE
 // 1. Load all FlakePartsStores
 // 2. Create an iterator over all parts (don't collect them yet)
@@ -140,44 +113,34 @@ fn parse_required_parts_tuples<'a>(
     cmd: &InitCommand,
     stores: &'a Vec<FlakePartsStore>,
 ) -> Result<Vec<FlakePartTuple<'a>>> {
-    use std::collections::HashSet;
-
-    let all_parts_tuples = stores.iter().flat_map(|store| {
-        store
-            .parts
-            .iter()
-            .map(move |part| FlakePartTuple::new(store, part.to_owned()))
-    });
+    let all_parts_tuples = stores
+        .iter()
+        .flat_map(|store| {
+            store
+                .parts
+                .iter()
+                .map(move |part| FlakePartTuple::new(store, part.to_owned()))
+        })
+        .collect::<Vec<_>>();
 
     let user_req_flake_strings = cmd.parts.clone();
 
     println!("User required parts: {:?}", user_req_flake_strings);
 
     let parts_uniq_dependencies = {
-        let mut seen = HashSet::new();
-
-        all_parts_tuples
-            // NOTE we are traversing twice over the proto_out_parts
-            // hence we need the iterator clone TODO
-            .clone()
-            .filter(|&ref part_tuple| {
+        let start_indices: Vec<usize> = all_parts_tuples
+            .iter()
+            .enumerate()
+            .filter(|&(_, part_tuple)| {
                 let flake_uri = part_tuple.to_flake_uri(None);
-
                 user_req_flake_strings
                     .iter()
                     .any(|req| req == &flake_uri || req == &part_tuple.part.name)
             })
-            .flat_map(|part_tuple| {
-                part_tuple
-                    .part
-                    .metadata
-                    .dependencies
-                    .iter()
-                    .map(|dep| normalize_flake_string(&dep, &part_tuple.store.flake_uri, None))
-                    .collect::<Vec<_>>()
-            })
-            .filter(|uri| seen.insert(uri.clone()))
-            .collect::<Vec<_>>()
+            .map(|(index, _)| index)
+            .collect();
+
+        FlakePartTuple::resolve_dependencies(&all_parts_tuples, start_indices)
     };
 
     let all_req_flake_strings = user_req_flake_strings
@@ -188,6 +151,7 @@ fn parse_required_parts_tuples<'a>(
     println!("All required parts: {:?}", all_req_flake_strings);
 
     let final_parts_tuples = all_parts_tuples
+        .into_iter()
         .filter(|part_tuple| {
             let flake_uri = part_tuple.to_flake_uri(None);
             all_req_flake_strings
@@ -203,6 +167,7 @@ fn parse_required_parts_tuples<'a>(
 
     println!("Final parts: {:?}", final_parts_uris);
 
+    // TODO also check for unresolved dependencies (due to not including them)
     check_for_missing_parts(&user_req_flake_strings, &final_parts_tuples)?;
 
     // TODO probably print that we are ignoring conflicts

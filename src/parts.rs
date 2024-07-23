@@ -42,6 +42,34 @@ impl<'a> FlakePartTuple<'a> {
     pub fn to_flake_uri(&self, derivation: Option<&str>) -> String {
         normalize_flake_string(&self.part.name, &self.store.flake_uri, derivation)
     }
+
+    pub fn resolve_dependencies(
+        parts_tuples_pool: &Vec<FlakePartTuple>,
+        start_indices: Vec<usize>,
+    ) -> Vec<String> {
+        use std::collections::{HashSet, VecDeque};
+
+        let mut resolved_dependencies = HashSet::new();
+        let mut to_process = VecDeque::from(start_indices);
+
+        while let Some(index) = to_process.pop_front() {
+            let part_tuple = &parts_tuples_pool[index];
+            for dep in &part_tuple.part.metadata.dependencies {
+                let normalized_dep = normalize_flake_string(dep, &part_tuple.store.flake_uri, None);
+                if resolved_dependencies.insert(normalized_dep.clone()) {
+                    // If this is a new dependency, find the corresponding PartTuple index and add it for processing
+                    if let Some(dep_index) = parts_tuples_pool
+                        .iter()
+                        .position(|p| p.to_flake_uri(None) == normalized_dep)
+                    {
+                        to_process.push_back(dep_index);
+                    }
+                }
+            }
+        }
+
+        resolved_dependencies.into_iter().collect()
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
