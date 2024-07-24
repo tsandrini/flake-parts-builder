@@ -46,10 +46,10 @@ impl<'a> FlakePartTuple<'a> {
     pub fn resolve_dependencies_of(
         parts_tuples_pool: &Vec<FlakePartTuple>,
         start_indices: Vec<usize>,
-    ) -> Vec<String> {
+    ) -> (Vec<String>, Vec<String>) {
         use std::collections::{HashSet, VecDeque};
-
         let mut resolved_dependencies = HashSet::new();
+        let mut unresolved_dependencies = Vec::new();
         let mut to_process = VecDeque::from(start_indices);
 
         while let Some(index) = to_process.pop_front() {
@@ -57,18 +57,24 @@ impl<'a> FlakePartTuple<'a> {
             for dep in &part_tuple.part.metadata.dependencies {
                 let normalized_dep = normalize_flake_string(dep, &part_tuple.store.flake_uri, None);
                 if resolved_dependencies.insert(normalized_dep.clone()) {
-                    // If this is a new dependency, find the corresponding PartTuple index and add it for processing
+                    // If this is a new dependency, try to find the corresponding PartTuple
                     if let Some(dep_index) = parts_tuples_pool
                         .iter()
                         .position(|p| p.to_flake_uri(None) == normalized_dep)
                     {
                         to_process.push_back(dep_index);
+                    } else {
+                        // This dependency couldn't be resolved
+                        unresolved_dependencies.push(normalized_dep);
                     }
                 }
             }
         }
 
-        resolved_dependencies.into_iter().collect()
+        (
+            resolved_dependencies.into_iter().collect(),
+            unresolved_dependencies,
+        )
     }
 
     pub fn find_conflicting_parts_in(
@@ -105,11 +111,6 @@ impl<'a> FlakePartTuple<'a> {
             .collect::<Vec<_>>()
     }
 
-    pub fn find_unresolved_dependencies_in(
-        parts_tuples: &'a Vec<FlakePartTuple>,
-    ) -> Vec<&'a FlakePartTuple<'a>> {
-        todo!("implement")
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

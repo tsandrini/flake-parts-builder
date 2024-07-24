@@ -65,7 +65,6 @@ pub struct InitCommand {
     #[arg(long = "disable-base", default_value_t = false, verbatim_doc_comment)]
     disable_base_parts: bool,
 
-    // TODO
     /// Force initialization in case of conflicting parts. Note that in such
     /// cases you should probably also pass a merging strategy that fits your
     /// specific needs.
@@ -75,6 +74,16 @@ pub struct InitCommand {
         verbatim_doc_comment
     )]
     ignore_conflicts: bool,
+
+    /// Force initialization in case of unresolved dependencies. This can happen
+    /// if you request parts that have 3rd party dependencies on parts stores
+    /// that aren't included via the `--include` or `-I` flag.
+    #[arg(
+        long = "ignore-unresolved-deps",
+        default_value_t = false,
+        verbatim_doc_comment
+    )]
+    ignore_unresolved_deps: bool,
 
     /// Force overwriting of local files in case of initialization in
     /// a non-empty directory
@@ -104,8 +113,11 @@ pub enum PartsTuplesParsingError {
     #[error("The following user required parts couldn't be resolved: {0:?}")]
     MissingPartsError(Vec<String>),
 
-    #[error("You have requested parts that conflict with each other: {0:?} If you wish to ignore these conflicts use the --ignore-conflicts flag")]
+    #[error("You have requested parts that conflict with each other: {0:?} If you wish to ignore these conflicts use the `--ignore-conflicts` flag")]
     ConflictingPartsError(Vec<String>),
+
+    #[error("The following dependencies were required but couldn't be resolved: {0:?} Please include the necessary flake-parts stores using the `-I` flag or pass the `--ignore-unresolved-deps` flag to ignore this error and force initialization.")]
+    UnresolvedDependenciesError(Vec<String>),
 }
 
 // NOTE
@@ -134,9 +146,10 @@ fn parse_required_parts_tuples<'a>(
 
     let user_req_flake_strings = cmd.parts.clone();
 
+    // TODO remove
     println!("User required parts: {:?}", user_req_flake_strings);
 
-    let parts_uniq_dependencies = {
+    let (resolved_deps, unresolved_deps) = {
         let start_indices: Vec<usize> = all_parts_tuples
             .iter()
             .enumerate()
@@ -152,11 +165,16 @@ fn parse_required_parts_tuples<'a>(
         FlakePartTuple::resolve_dependencies_of(&all_parts_tuples, start_indices)
     };
 
+    if !unresolved_deps.is_empty() {
+        return Err(PartsTuplesParsingError::UnresolvedDependenciesError(unresolved_deps))
+    }
+
     let all_req_flake_strings = user_req_flake_strings
         .iter()
-        .chain(parts_uniq_dependencies.iter())
+        .chain(resolved_deps.iter())
         .collect::<Vec<_>>();
 
+    // TODO remove
     println!("All required parts: {:?}", all_req_flake_strings);
 
     let final_parts_tuples = all_parts_tuples
@@ -174,6 +192,7 @@ fn parse_required_parts_tuples<'a>(
         .map(|flake_part| flake_part.to_flake_uri(None))
         .collect::<Vec<_>>();
 
+    // TODO remove
     println!("Final parts: {:?}", final_parts_uris);
 
     let missing_parts =
@@ -182,7 +201,7 @@ fn parse_required_parts_tuples<'a>(
     if missing_parts.len() > 0 {
         return Err(PartsTuplesParsingError::MissingPartsError(
             missing_parts.into_iter().cloned().collect::<Vec<_>>(),
-        ));
+        ))
     }
 
     // TODO probably print that we are ignoring conflicts
@@ -196,7 +215,7 @@ fn parse_required_parts_tuples<'a>(
                     .into_iter()
                     .map(|flake_part| flake_part.to_flake_uri(None))
                     .collect::<Vec<_>>(),
-            ));
+            ))
         }
     }
 
