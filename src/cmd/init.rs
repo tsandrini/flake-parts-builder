@@ -166,7 +166,9 @@ fn parse_required_parts_tuples<'a>(
     };
 
     if !unresolved_deps.is_empty() {
-        return Err(PartsTuplesParsingError::UnresolvedDependenciesError(unresolved_deps))
+        return Err(PartsTuplesParsingError::UnresolvedDependenciesError(
+            unresolved_deps,
+        ));
     }
 
     let all_req_flake_strings = user_req_flake_strings
@@ -201,7 +203,7 @@ fn parse_required_parts_tuples<'a>(
     if missing_parts.len() > 0 {
         return Err(PartsTuplesParsingError::MissingPartsError(
             missing_parts.into_iter().cloned().collect::<Vec<_>>(),
-        ))
+        ));
     }
 
     // TODO probably print that we are ignoring conflicts
@@ -215,7 +217,7 @@ fn parse_required_parts_tuples<'a>(
                     .into_iter()
                     .map(|flake_part| flake_part.to_flake_uri(None))
                     .collect::<Vec<_>>(),
-            ))
+            ));
         }
     }
 
@@ -305,17 +307,14 @@ pub fn init(mut cmd: InitCommand) -> Result<()> {
 
     let parts_tuples = parse_required_parts_tuples(&cmd, &stores)?;
 
-    if !cmd.path.exists() {
-        dir::create_all(&cmd.path, false)?;
+    let path = cmd.path.canonicalize().unwrap_or_else(|_| cmd.path.clone());
+
+    if !path.exists() {
+        dir::create_all(&path, false)?;
     }
 
     let tmpdir = tempdir()?;
-    prepare_tmpdir(
-        &tmpdir,
-        &parts_tuples,
-        cmd.path.file_name().unwrap().to_str(),
-        &cmd.strategy,
-    )?;
+    prepare_tmpdir(&tmpdir, &parts_tuples, path.to_str(), &cmd.strategy)?;
 
     dir::copy(
         &tmpdir,
