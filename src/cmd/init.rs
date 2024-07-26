@@ -17,10 +17,13 @@ use crate::parts::{FlakeContext, FlakePartTuple, FlakePartsStore};
 /// Initialize a new flake-parts projects using the builder.
 #[derive(Debug, Args)]
 pub struct InitCommand {
-    /// Path for the new desired flake-parts project. This can be either an
-    /// already existing path or a new one. Can be relative or absolute.
+    /// Path (relative or absolute) for the desired flake-parts project.
+    /// You can either pass an empty or non-existing directory, in which case
+    /// all content will be new or you can pass an existing directory already
+    /// populated with files. In such case the directories will be merged
+    /// according to the strategy specified in `--strategy`.
     #[clap(verbatim_doc_comment)]
-    path: PathBuf,
+    pub path: PathBuf,
 
     /// Which parts to include in the project separated by commas. To see
     /// which ones are available use the `list` subcommand.
@@ -31,7 +34,7 @@ pub struct InitCommand {
         value_delimiter = ',',
         verbatim_doc_comment
     )]
-    parts: Vec<String>,
+    pub parts: Vec<String>,
 
     /// Additional parts templates stores to load. This currently accepts any
     /// valid flakes derivation URI. For example:
@@ -40,19 +43,20 @@ pub struct InitCommand {
     /// - `../myDir#flake-parts`
     /// - `.#different-flake-parts`
     ///
-    /// NOTE: that the derivation needs to have the parts stored at
-    /// `$out/flake-parts`
+    /// NOTE: the derivation needs to have the parts stored at
+    /// `$out/flake-parts`. You can also use `lib.mkFlakeParts` defined
+    /// in `flake.nix` to make this easier.
     #[arg(
         short = 'I',
         long = "include",
         value_delimiter = ',',
         verbatim_doc_comment
     )]
-    parts_stores: Vec<String>,
+    pub parts_stores: Vec<String>,
 
     /// Strategy to use when encountering already existing files
     #[arg(value_enum, short, long, default_value = "skip", verbatim_doc_comment)]
-    strategy: InitStrategy,
+    pub strategy: InitStrategy,
 
     /// Disable base parts provided by this flake, that is,
     /// `github:tsandrini/flake-parts-builder#flake-parts`. Useful in case
@@ -63,7 +67,7 @@ pub struct InitCommand {
     /// properly function (if you really need to you can override the files
     /// with your own versions)
     #[arg(long = "disable-base", default_value_t = false, verbatim_doc_comment)]
-    disable_base_parts: bool,
+    pub disable_base_parts: bool,
 
     /// Force initialization in case of conflicting parts. Note that in such
     /// cases you should probably also pass a merging strategy that fits your
@@ -73,7 +77,7 @@ pub struct InitCommand {
         default_value_t = false,
         verbatim_doc_comment
     )]
-    ignore_conflicts: bool,
+    pub ignore_conflicts: bool,
 
     /// Force initialization in case of unresolved dependencies. This can happen
     /// if you request parts that have 3rd party dependencies on parts stores
@@ -83,16 +87,16 @@ pub struct InitCommand {
         default_value_t = false,
         verbatim_doc_comment
     )]
-    ignore_unresolved_deps: bool,
+    pub ignore_unresolved_deps: bool,
 
     /// Force overwriting of local files in case of initialization in
     /// a non-empty directory
     #[arg(long = "force", default_value_t = false, verbatim_doc_comment)]
-    force: bool,
+    pub force: bool,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-enum InitStrategy {
+pub enum InitStrategy {
     /// Skip file if already present in the filesystem
     #[clap(verbatim_doc_comment)]
     Skip,
@@ -130,7 +134,7 @@ pub enum PartsTuplesParsingError {
 //    d. Combine these two
 // 4. We finally can create a vec of all parts that should be used
 // 5. Collect! (profit)
-fn parse_required_parts_tuples<'a>(
+pub fn parse_required_parts_tuples<'a>(
     cmd: &InitCommand,
     stores: &'a Vec<FlakePartsStore>,
 ) -> Result<Vec<FlakePartTuple<'a>>, PartsTuplesParsingError> {
@@ -224,7 +228,7 @@ fn parse_required_parts_tuples<'a>(
     Ok(final_parts_tuples)
 }
 
-fn render_flake_nix(flake_context: &FlakeContext) -> Result<String> {
+pub fn render_flake_nix(flake_context: &FlakeContext) -> Result<String> {
     use minijinja::{context, Environment};
 
     let mut env = Environment::new();
@@ -236,11 +240,12 @@ fn render_flake_nix(flake_context: &FlakeContext) -> Result<String> {
     Ok(rendered)
 }
 
-fn prepare_tmpdir(
+pub fn prepare_tmpdir(
     tmpdir: &TempDir,
     parts_tuples: &Vec<FlakePartTuple>,
     target_name: Option<&str>,
     init_strategy: &InitStrategy,
+    should_render_flake_nix: bool,
 ) -> Result<()> {
     // TODO MERGE STRATEGY
     let tmp_path = tmpdir.path();
@@ -262,7 +267,7 @@ fn prepare_tmpdir(
 
     reset_permissions(tmp_path.to_str().unwrap())?;
 
-    {
+    if should_render_flake_nix {
         let flake_context = {
             let metadata = parts_tuples
                 .iter()
@@ -314,7 +319,7 @@ pub fn init(mut cmd: InitCommand) -> Result<()> {
     }
 
     let tmpdir = tempdir()?;
-    prepare_tmpdir(&tmpdir, &parts_tuples, path.to_str(), &cmd.strategy)?;
+    prepare_tmpdir(&tmpdir, &parts_tuples, path.to_str(), &cmd.strategy, true)?;
 
     dir::copy(
         &tmpdir,

@@ -9,6 +9,7 @@ pub mod fs_utils;
 pub mod nix;
 pub mod parts;
 
+use crate::cmd::add::{add, AddCommand};
 use crate::cmd::init::{init, InitCommand};
 use crate::cmd::list::{list, ListCommand};
 
@@ -29,11 +30,9 @@ struct Cli {
 enum Commands {
     Init(InitCommand),
 
-    /// List all available flake-parts
     List(ListCommand),
 
-    // TODO
-    Add,
+    Add(AddCommand),
 }
 
 // TODO add logging
@@ -50,7 +49,7 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Init(cmd) => init(cmd),
         Commands::List(cmd) => list(cmd),
-        Commands::Add => todo!("Add command not implemented yet"), // TODO
+        Commands::Add(cmd) => add(cmd),
     }
 }
 

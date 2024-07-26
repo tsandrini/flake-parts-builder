@@ -3,7 +3,7 @@ use color_eyre::eyre::Result;
 use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
-use crate::config::{BOOTSTRAP_DERIVATION_NAME, SELF_FLAKE_URI};
+use crate::config::{BASE_DERIVATION_NAME, BOOTSTRAP_DERIVATION_NAME, SELF_FLAKE_URI};
 use crate::parts::FlakePartsStore;
 
 #[derive(Debug, Args)]
@@ -22,7 +22,7 @@ pub struct ListCommand {
 pub fn list(mut cmd: ListCommand) -> Result<()> {
     if !cmd.disable_base_parts {
         cmd.parts_stores
-            .push(format!("{}#flake-parts", SELF_FLAKE_URI));
+            .push(format!("{}#{}", SELF_FLAKE_URI, BASE_DERIVATION_NAME));
     }
 
     // NOTE this one is required even if you disable base store parts
@@ -35,6 +35,7 @@ pub fn list(mut cmd: ListCommand) -> Result<()> {
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
         writeln!(&mut stdout, " # {}", flake_uri)?;
 
+        // TODO maybe some error message instead of unwrap?
         FlakePartsStore::from_flake_uri(&flake_uri)
             .unwrap()
             .parts
