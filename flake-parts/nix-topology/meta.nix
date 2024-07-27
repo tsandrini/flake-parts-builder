@@ -1,4 +1,4 @@
-_: {
+{
   description = "Adds bindings for the oddlama/nix-topology project to generate graphs of your networks.";
 
   inputs = {

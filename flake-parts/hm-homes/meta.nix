@@ -1,4 +1,4 @@
-_: {
+{
   description = "Template for your HM homes and a handy generator for you `homeManagerConfiguration` calls.";
 
   inputs = {

@@ -1,4 +1,4 @@
-_: {
+{
   description = "Bindings for process-compose-flake and a simple process-compose template.";
 
   inputs = {

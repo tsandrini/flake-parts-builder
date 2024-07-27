@@ -1,4 +1,4 @@
-_: {
+{
   description = "Bindings for pre-commit-hooks.nix and a simple pre-commit-hook template.";
 
   inputs = {

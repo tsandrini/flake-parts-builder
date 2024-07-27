@@ -1,4 +1,4 @@
-_: {
+{
   description = "Bindings for the treefmt formatter and a basic treefmt configuration.";
 
   inputs = {

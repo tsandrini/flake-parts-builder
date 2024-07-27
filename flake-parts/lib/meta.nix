@@ -1,4 +1,4 @@
-_: {
+{
   description = "Basic template for custom nix library functions.";
 
   inputs = { };

@@ -1,5 +1,5 @@
 # --- meta.nix
-_: {
+{
   description = "(Collection) GitHub related parts";
 
   inputs = { };

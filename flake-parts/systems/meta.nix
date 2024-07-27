@@ -1,4 +1,4 @@
-_: {
+{
   description = "Sets up the default `systems` of flake-parts using `github:nix-systems/default`.";
 
   inputs = {

@@ -1,4 +1,4 @@
-_: {
+{
   description = "Flake bindings for the cachix/devenv development environment.";
 
   inputs = {

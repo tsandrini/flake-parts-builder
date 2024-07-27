@@ -1,5 +1,5 @@
 # --- meta.nix
-_: {
+{
   description = "(Collection) Home-manager related parts.";
 
   inputs = { };

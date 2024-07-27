@@ -1,4 +1,4 @@
-_: {
+{
   description = "Basic template for custom nix devshells (ie. `mkShell` calls) with potential bindings to other parts.";
 
   inputs = { };
