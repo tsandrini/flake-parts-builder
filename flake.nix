@@ -116,7 +116,7 @@
                       runHook postUnpack
                     '';
 
-                    cargoSha256 = "sha256-yWViuPayJX1WFZbhMQPAQJoRUDJohF7NHGMe/y84TdI=";
+                    cargoSha256 = "sha256-JYCiIbStvpmO4CO3Sp7tMHUdWpFMKiveE5ATIyK0UVo=";
 
                     buildInputs = [ nixfmt-rfc-style ];
 
