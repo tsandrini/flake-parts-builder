@@ -21,18 +21,12 @@ use crate::cmd::list::{list, ListCommand};
 struct Cli {
     #[command(subcommand)]
     command: Commands,
-
-    /// Enable verbose logging
-    #[arg(short, long, default_value_t = false)]
-    verbose: bool,
 }
 
 #[derive(Debug, Subcommand)]
 enum Commands {
     Init(InitCommand),
-
     List(ListCommand),
-
     Add(AddCommand),
 }
 

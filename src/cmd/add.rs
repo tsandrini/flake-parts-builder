@@ -26,8 +26,9 @@ pub struct AddCommand {
 }
 
 pub fn add(mut cmd: AddCommand) -> Result<()> {
-    if !cmd.init.disable_base_parts {
+    if !cmd.init.shared_args.disable_base_parts {
         cmd.init
+            .shared_args
             .parts_stores
             .push(format!("{}#{}", SELF_FLAKE_URI, BASE_DERIVATION_NAME));
     }
@@ -35,6 +36,7 @@ pub fn add(mut cmd: AddCommand) -> Result<()> {
     // NOTE we init stores here to have sensible ownerships of FlakePartTuples
     let stores = cmd
         .init
+        .shared_args
         .parts_stores
         .iter()
         .map(|store| FlakePartsStore::from_flake_uri(&store))

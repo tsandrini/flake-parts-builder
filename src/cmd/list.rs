@@ -3,63 +3,62 @@ use color_eyre::eyre::Result;
 use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
+use crate::cmd::SharedArgs;
 use crate::config::{BASE_DERIVATION_NAME, BOOTSTRAP_DERIVATION_NAME, SELF_FLAKE_URI};
 use crate::parts::FlakePartsStore;
 
 #[derive(Debug, Args)]
 pub struct ListCommand {
-    /// Additional parts templates stores to load
-    #[arg(short = 'I', long = "include")]
-    parts_stores: Vec<String>,
-
-    /// Disable base parts provided by this flake
-    /// NOTE: _bootstrap part is always included
-    /// for the project to properly function
-    #[arg(long = "disable-base", default_value_t = false)]
-    disable_base_parts: bool,
+    #[clap(flatten)]
+    pub shared_args: SharedArgs,
 }
 
 pub fn list(mut cmd: ListCommand) -> Result<()> {
-    if !cmd.disable_base_parts {
-        cmd.parts_stores
+    if !cmd.shared_args.disable_base_parts {
+        cmd.shared_args
+            .parts_stores
             .push(format!("{}#{}", SELF_FLAKE_URI, BASE_DERIVATION_NAME));
     }
 
     // NOTE this one is required even if you disable base store parts
-    cmd.parts_stores
+    cmd.shared_args
+        .parts_stores
         .push(format!("{}#{}", SELF_FLAKE_URI, BOOTSTRAP_DERIVATION_NAME));
 
     let mut stdout = StandardStream::stdout(ColorChoice::Auto);
 
-    cmd.parts_stores.iter().try_for_each(|flake_uri| {
-        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
-        writeln!(&mut stdout, " # {}", flake_uri)?;
+    cmd.shared_args
+        .parts_stores
+        .iter()
+        .try_for_each(|flake_uri| {
+            stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
+            writeln!(&mut stdout, " # {}", flake_uri)?;
 
-        // TODO maybe some error message instead of unwrap?
-        FlakePartsStore::from_flake_uri(&flake_uri)
-            .unwrap()
-            .parts
-            .iter()
-            .try_for_each(|part| {
-                // Visually distinguish collections
-                let color = if part.name.contains('+') {
-                    Color::Cyan
-                } else {
-                    Color::Red
-                };
+            // TODO maybe some error message instead of unwrap?
+            FlakePartsStore::from_flake_uri(&flake_uri)
+                .unwrap()
+                .parts
+                .iter()
+                .try_for_each(|part| {
+                    // Visually distinguish collections
+                    let color = if part.name.contains('+') {
+                        Color::Cyan
+                    } else {
+                        Color::Red
+                    };
 
-                stdout.set_color(ColorSpec::new().set_fg(Some(color)))?;
+                    stdout.set_color(ColorSpec::new().set_fg(Some(color)))?;
 
-                write!(&mut stdout, "  - {}: ", part.name)?;
+                    write!(&mut stdout, "  - {}: ", part.name)?;
 
-                stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
+                    stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
 
-                writeln!(&mut stdout, "{}", part.metadata.description)?;
+                    writeln!(&mut stdout, "{}", part.metadata.description)?;
 
-                Ok(()) as Result<()>
-            })?;
+                    Ok(()) as Result<()>
+                })?;
 
-        println!("");
-        Ok(())
-    })
+            println!("");
+            Ok(())
+        })
 }

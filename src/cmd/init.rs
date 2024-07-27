@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use tempfile::{tempdir, TempDir};
 use thiserror::Error;
 
+use crate::cmd::SharedArgs;
 use crate::config::{
     BASE_DERIVATION_NAME, BOOTSTRAP_DERIVATION_NAME, META_FILE, NAMEPLACEHOLDER, SELF_FLAKE_URI,
 };
@@ -17,6 +18,9 @@ use crate::templates::FlakeContext;
 /// Initialize a new flake-parts projects using the builder.
 #[derive(Debug, Args)]
 pub struct InitCommand {
+    #[clap(flatten)]
+    pub shared_args: SharedArgs,
+
     /// Path (relative or absolute) for the desired flake-parts project.
     /// You can either pass an empty or non-existing directory, in which case
     /// all content will be new or you can pass an existing directory already
@@ -36,38 +40,9 @@ pub struct InitCommand {
     )]
     pub parts: Vec<String>,
 
-    /// Additional parts templates stores to load. This currently accepts any
-    /// valid flakes derivation URI. For example:
-    ///
-    /// - `github:tsandrini/flake-parts-builder#flake-parts`
-    /// - `../myDir#flake-parts`
-    /// - `.#different-flake-parts`
-    ///
-    /// NOTE: the derivation needs to have the parts stored at
-    /// `$out/flake-parts`. You can also use `lib.mkFlakeParts` defined
-    /// in `flake.nix` to make this easier.
-    #[arg(
-        short = 'I',
-        long = "include",
-        value_delimiter = ',',
-        verbatim_doc_comment
-    )]
-    pub parts_stores: Vec<String>,
-
     /// Strategy to use when encountering already existing files
     #[arg(value_enum, short, long, default_value = "skip", verbatim_doc_comment)]
     pub strategy: InitStrategy,
-
-    /// Disable base parts provided by this flake, that is,
-    /// `github:tsandrini/flake-parts-builder#flake-parts`. Useful in case
-    /// you'd like to override certain parts or simply not use the one provided
-    /// by this repo.
-    ///
-    /// NOTE: _bootstrap part is always included for the project to
-    /// properly function (if you really need to you can override the files
-    /// with your own versions)
-    #[arg(long = "disable-base", default_value_t = false, verbatim_doc_comment)]
-    pub disable_base_parts: bool,
 
     /// Force initialization in case of conflicting parts. Note that in such
     /// cases you should probably also pass a merging strategy that fits your
@@ -277,13 +252,15 @@ pub fn prepare_tmpdir(
 }
 
 pub fn init(mut cmd: InitCommand) -> Result<()> {
-    if !cmd.disable_base_parts {
-        cmd.parts_stores
+    if !cmd.shared_args.disable_base_parts {
+        cmd.shared_args
+            .parts_stores
             .push(format!("{}#{}", SELF_FLAKE_URI, BASE_DERIVATION_NAME));
     }
 
     // NOTE this one is required even if you disable base store parts
-    cmd.parts_stores
+    cmd.shared_args
+        .parts_stores
         .push(format!("{}#{}", SELF_FLAKE_URI, BOOTSTRAP_DERIVATION_NAME));
     cmd.parts.push(format!(
         "{}#{}/_bootstrap",
@@ -292,6 +269,7 @@ pub fn init(mut cmd: InitCommand) -> Result<()> {
 
     // NOTE we init stores here to have sensible ownerships of FlakePartTuples
     let stores = cmd
+        .shared_args
         .parts_stores
         .iter()
         .map(|store| FlakePartsStore::from_flake_uri(&store))
