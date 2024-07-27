@@ -1,5 +1,5 @@
 _: {
-  description = "agenix";
+  description = "Bindings for the agenix secrets manager with prepared NixOS/HM modules ready to be used in your configurations.";
 
   inputs = {
     agenix = {

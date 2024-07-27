@@ -1,5 +1,5 @@
 _: {
-  description = "Structures for custom NixOS modules.";
+  description = "Basic template for custom NixOS modules.";
 
   inputs = { };
   extraTrustedPublicKeys = [ ];

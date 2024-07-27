@@ -1,7 +1,7 @@
 _: {
-  description = "Sets up structure for custom derivations (packages).";
+  description = "Basic template for custom nix packages (ie derivations).";
 
-  inputs = {  };
+  inputs = { };
   extraTrustedPublicKeys = [ ];
   extraSubstituters = [ ];
 }

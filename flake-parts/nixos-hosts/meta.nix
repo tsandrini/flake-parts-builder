@@ -1,5 +1,5 @@
 _: {
-  description = "Provides basic structures and helper generators for NixOS hosts.";
+  description = "Template for your NixOS hosts and a handy generator for `lib.nixosSystem` calls.";
 
   inputs = { };
   extraTrustedPublicKeys = [ ];

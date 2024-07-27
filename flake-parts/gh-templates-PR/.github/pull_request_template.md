@@ -1,5 +1,3 @@
-# TODO: Place a short descriptive PR name here
-
 ## Overview
 
 <!-- Provide a brief overview of what this PR aims to accomplish. For instance,
@@ -14,7 +12,7 @@ package, test that `nix build` produces the expected binaries/libraries and that
 they work as well. Or when adding new NixOS/home-manager modules that you were
 able to include them in a NixOS/home-configuration build and that they work.-->
 
-## Dependencies (flake inputs)
+## Dependencies
 
 <!-- List any new dependencies introduced by this PR, or if any existing
 dependencies are updated or removed. -->

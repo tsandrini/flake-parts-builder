@@ -1,5 +1,5 @@
 _: {
-  description = "Sets up the unified treefmt formatter bindings for your flake.";
+  description = "Bindings for the treefmt formatter and a basic treefmt configuration.";
 
   inputs = {
     treefmt-nix.url = "github:numtide/treefmt-nix";

@@ -1,5 +1,5 @@
 _: {
-  description = "github actions check";
+  description = "Adds a simple `nix flake check` GitHub action workflow.";
 
   inputs = { };
   extraTrustedPublicKeys = [ ];

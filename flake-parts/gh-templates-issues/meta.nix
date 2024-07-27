@@ -1,5 +1,5 @@
 _: {
-  description = "github issue templates";
+  description = "Adds basic bug/feature GitHub issue templates.";
 
   inputs = { };
   extraTrustedPublicKeys = [ ];

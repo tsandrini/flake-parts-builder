@@ -1,5 +1,5 @@
 _: {
-  description = "github PR templates";
+  description = "Adds a basic GitHub pull request template.";
 
   inputs = { };
   extraTrustedPublicKeys = [ ];

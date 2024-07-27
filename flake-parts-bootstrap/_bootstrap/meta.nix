@@ -1,6 +1,6 @@
 # --- meta.nix
 _: {
-  description = "(Required) Sets up a minimal base flake skeleton that other parts build up on.";
+  description = "(Required) Minimal set of functions used to bootstrap your flake-parts project.";
 
   inputs = { };
   extraTrustedPublicKeys = [ ];

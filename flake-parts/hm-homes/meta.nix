@@ -1,5 +1,5 @@
 _: {
-  description = "hm-homes";
+  description = "Template for your HM homes and a handy generator for you `homeManagerConfiguration` calls.";
 
   inputs = {
     home-manager = {

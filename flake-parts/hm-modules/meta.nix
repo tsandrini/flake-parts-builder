@@ -1,5 +1,5 @@
 _: {
-  description = "hm-modules";
+  description = "Basic template for custom home-manager modules.";
 
   inputs = {
     home-manager = {
