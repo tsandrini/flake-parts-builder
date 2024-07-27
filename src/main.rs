@@ -8,6 +8,7 @@ pub mod config;
 pub mod fs_utils;
 pub mod nix;
 pub mod parts;
+pub mod templates;
 
 use crate::cmd::add::{add, AddCommand};
 use crate::cmd::init::{init, InitCommand};
@@ -38,10 +39,6 @@ enum Commands {
 // TODO add logging
 // TODO add tests
 // TODO better docs
-// TODO constructors?
-// TODO implement checking for wrongly provided parts
-// TODO github actions, gitlab actions?
-// TODO format after init
 fn main() -> Result<()> {
     color_eyre::install()?;
     let cli = Cli::parse();

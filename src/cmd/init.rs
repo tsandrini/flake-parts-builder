@@ -7,12 +7,12 @@ use tempfile::{tempdir, TempDir};
 use thiserror::Error;
 
 use crate::config::{
-    BASE_DERIVATION_NAME, BOOTSTRAP_DERIVATION_NAME, FLAKE_INPUTS_TEMPLATE, FLAKE_TEMPLATE,
-    META_FILE, NAMEPLACEHOLDER, SELF_FLAKE_URI,
+    BASE_DERIVATION_NAME, BOOTSTRAP_DERIVATION_NAME, META_FILE, NAMEPLACEHOLDER, SELF_FLAKE_URI,
 };
 use crate::fs_utils::{regex_in_dir_recursive, reset_permissions};
 use crate::nix::nixfmt_file;
-use crate::parts::{FlakeContext, FlakePartTuple, FlakePartsStore};
+use crate::parts::{FlakePartTuple, FlakePartsStore};
+use crate::templates::FlakeContext;
 
 /// Initialize a new flake-parts projects using the builder.
 #[derive(Debug, Args)]
@@ -228,24 +228,12 @@ pub fn parse_required_parts_tuples<'a>(
     Ok(final_parts_tuples)
 }
 
-pub fn render_flake_nix(flake_context: &FlakeContext) -> Result<String> {
-    use minijinja::{context, Environment};
-
-    let mut env = Environment::new();
-    env.add_template("flake.nix", &FLAKE_TEMPLATE).unwrap();
-    env.add_template("flake-inputs.nix", &FLAKE_INPUTS_TEMPLATE)
-        .unwrap();
-    let tmpl = env.get_template("flake.nix").unwrap();
-    let rendered = tmpl.render(context! ( context => flake_context))?;
-    Ok(rendered)
-}
-
 pub fn prepare_tmpdir(
     tmpdir: &TempDir,
     parts_tuples: &Vec<FlakePartTuple>,
     target_name: Option<&str>,
     init_strategy: &InitStrategy,
-    should_render_flake_nix: bool,
+    render_flake_nix: bool,
 ) -> Result<()> {
     // TODO MERGE STRATEGY
     let tmp_path = tmpdir.path();
@@ -267,16 +255,15 @@ pub fn prepare_tmpdir(
 
     reset_permissions(tmp_path.to_str().unwrap())?;
 
-    if should_render_flake_nix {
-        let flake_context = {
-            let metadata = parts_tuples
-                .iter()
-                .map(|part_tuple| &part_tuple.part.metadata)
-                .collect::<Vec<_>>();
-            FlakeContext::from_merged_metadata(metadata)
-        };
+    if render_flake_nix {
+        let metadata = parts_tuples
+            .iter()
+            .map(|part_tuple| &part_tuple.part.metadata)
+            .collect::<Vec<_>>();
 
-        let rendered = render_flake_nix(&flake_context)?;
+        let flake_context = FlakeContext::from_merged_metadata(&metadata);
+
+        let rendered = flake_context.render()?;
         fs::write(tmp_path.join("flake.nix"), rendered)?;
         nixfmt_file(&tmp_path.join("flake.nix"))?;
     }

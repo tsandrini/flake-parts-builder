@@ -4,8 +4,9 @@ use fs_extra::dir::{self, CopyOptions};
 use tempfile::tempdir;
 
 use crate::cmd::init::{parse_required_parts_tuples, prepare_tmpdir, InitCommand};
-use crate::config::{BASE_DERIVATION_NAME, FLAKE_INPUTS_TEMPLATE, SELF_FLAKE_URI};
-use crate::parts::{FlakeContext, FlakePartsStore};
+use crate::config::{BASE_DERIVATION_NAME, SELF_FLAKE_URI};
+use crate::parts::FlakePartsStore;
+use crate::templates::FlakeInputsContext;
 
 // TODO for some reason broken formatting
 /// Add additional flake-parts to an already initialized project. This is
@@ -24,77 +25,67 @@ pub struct AddCommand {
     pub init: InitCommand,
 }
 
-fn render_flake_inputs(flake_context: &FlakeContext) -> Result<String> {
-    use minijinja::{context, Environment};
-
-    let mut env = Environment::new();
-    env.add_template("flake-inputs.nix", &FLAKE_INPUTS_TEMPLATE)
-        .unwrap();
-    let tmpl = env.get_template("flake-inputs.nix").unwrap();
-    let rendered = tmpl.render(context! ( context => flake_context))?;
-    Ok(rendered)
-}
-
-pub fn add(add_cmd: AddCommand) -> Result<()> {
-    let mut cmd = add_cmd.init;
-
-    if !cmd.disable_base_parts {
-        cmd.parts_stores
+pub fn add(mut cmd: AddCommand) -> Result<()> {
+    if !cmd.init.disable_base_parts {
+        cmd.init
+            .parts_stores
             .push(format!("{}#{}", SELF_FLAKE_URI, BASE_DERIVATION_NAME));
     }
 
-    // TODO we probably don't need to bootstrap again?
-    // cmd.parts_stores
-    //     .push(format!("{}#{}", SELF_FLAKE_URI, BOOTSTRAP_DERIVATION_NAME));
-    // cmd.parts.push(format!(
-    //     "{}#{}/_bootstrap",
-    //     SELF_FLAKE_URI, BOOTSTRAP_DERIVATION_NAME
-    // ));
-
     // NOTE we init stores here to have sensible ownerships of FlakePartTuples
     let stores = cmd
+        .init
         .parts_stores
         .iter()
         .map(|store| FlakePartsStore::from_flake_uri(&store))
         .collect::<Result<Vec<_>>>()?;
 
-    let parts_tuples = parse_required_parts_tuples(&cmd, &stores)?;
+    let parts_tuples = parse_required_parts_tuples(&cmd.init, &stores)?;
 
-    let path = cmd.path.canonicalize().unwrap_or_else(|_| cmd.path.clone());
+    let path = cmd
+        .init
+        .path
+        .canonicalize()
+        .unwrap_or_else(|_| cmd.init.path.clone());
 
+    // TODO probably yield an error instead
     if !path.exists() {
         dir::create_all(&path, false)?;
     }
 
     let tmpdir = tempdir()?;
-    prepare_tmpdir(&tmpdir, &parts_tuples, path.to_str(), &cmd.strategy, false)?;
+    prepare_tmpdir(
+        &tmpdir,
+        &parts_tuples,
+        path.to_str(),
+        &cmd.init.strategy,
+        false,
+    )?;
 
-    // NOTE the flake.nix flake shouldn't be present due to the strucutre of
+    // NOTE the flake.nix file shouldn't be present due to the strucutre of
     // flake-parts, but I am way tooo paranoid.
     if tmpdir.path().join("flake.nix").exists() {
         std::fs::remove_file(tmpdir.path().join("flake.nix"))?;
     }
 
-    let flake_context = {
-        let metadata = parts_tuples
-            .iter()
-            .map(|part_tuple| &part_tuple.part.metadata)
-            .collect::<Vec<_>>();
+    let metadata = parts_tuples
+        .iter()
+        .map(|part_tuple| &part_tuple.part.metadata)
+        .collect::<Vec<_>>();
 
-        FlakeContext::from_merged_metadata(metadata)
-    };
+    let flake_context = FlakeInputsContext::from_merged_metadata(&metadata);
 
-    let rendered = render_flake_inputs(&flake_context)?;
-    println!("Please add the following inputs to your flake.nix:");
+    let rendered = flake_context.render()?;
+    println!("Please add the following snippet to your `flake.nix` inputs:");
     println!("{}", rendered);
 
     dir::copy(
         &tmpdir,
-        &cmd.path,
+        &cmd.init.path,
         &CopyOptions::new()
             .content_only(true)
-            .skip_exist(!cmd.force)
-            .overwrite(cmd.force),
+            .skip_exist(!cmd.init.force)
+            .overwrite(cmd.init.force),
     )?;
 
     Ok(())

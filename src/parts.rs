@@ -110,7 +110,6 @@ impl<'a> FlakePartTuple<'a> {
             })
             .collect::<Vec<_>>()
     }
-
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -128,16 +127,9 @@ pub struct FlakePartMetadata {
     pub conflicts: Vec<String>,
 
     #[serde(rename = "extraTrustedPublicKeys", default)]
-    extra_trusted_public_keys: Vec<String>,
+    pub extra_trusted_public_keys: Vec<String>,
 
     #[serde(rename = "extraSubstituters", default)]
-    extra_substituters: Vec<String>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct FlakeContext {
-    pub inputs: JsonValue,
-    pub extra_trusted_public_keys: Vec<String>,
     pub extra_substituters: Vec<String>,
 }
 
@@ -146,51 +138,6 @@ pub struct FlakePartsStore {
     pub flake_uri: String,
     pub nix_store_path: PathBuf,
     pub parts: Vec<FlakePart>,
-}
-
-impl FlakeContext {
-    fn new(
-        inputs: JsonValue,
-        extra_trusted_public_keys: Vec<String>,
-        extra_substituters: Vec<String>,
-    ) -> Self {
-        Self {
-            inputs,
-            extra_trusted_public_keys,
-            extra_substituters,
-        }
-    }
-
-    pub fn from_merged_metadata(metadata: Vec<&FlakePartMetadata>) -> Self {
-        let inputs = metadata
-            .iter()
-            .fold(JsonValue::Object(Default::default()), |mut acc, m| {
-                if let (JsonValue::Object(acc_obj), JsonValue::Object(inputs_obj)) =
-                    (&mut acc, &m.inputs)
-                {
-                    for (k, v) in inputs_obj.iter() {
-                        acc_obj.insert(k.clone(), v.clone());
-                    }
-                }
-                acc
-            });
-
-        let extra_trusted_public_keys = metadata
-            .iter()
-            .flat_map(|m| m.extra_trusted_public_keys.iter().cloned())
-            .collect::<Vec<String>>();
-
-        let extra_substituters = metadata
-            .iter()
-            .flat_map(|m| m.extra_substituters.iter().cloned())
-            .collect::<Vec<String>>();
-
-        Self::new(
-            inputs.clone(),
-            extra_trusted_public_keys,
-            extra_substituters,
-        )
-    }
 }
 
 #[derive(Error, Debug)]
