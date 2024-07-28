@@ -1,7 +1,7 @@
 name: "Deploy static content to GitHub Pages"
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # allows manual triggering from the Actions UI
   push:
     branches:
       - main

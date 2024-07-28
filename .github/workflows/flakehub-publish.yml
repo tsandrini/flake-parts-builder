@@ -1,6 +1,7 @@
 name: "Publish flake to FlakeHub"
 
 on:
+  workflow_dispatch: # allows manual triggering from the Actions UI
   push:
     branches:
       - main

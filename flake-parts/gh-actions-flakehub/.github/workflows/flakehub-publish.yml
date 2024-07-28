@@ -1,6 +1,7 @@
 name: "Publish flake to FlakeHub"
 
 on:
+  workflow_dispatch: # allows manual triggering from the Actions UI
   push:
     branches:
       - main
@@ -24,6 +25,6 @@ jobs:
       - name: "Publishing flake to FlakeHub..."
         uses: DeterminateSystems/flakehub-push@main
         with:
-          name: "organization/NAMEPLACEHOLDER" # TODO: add info
+          name: "ORG/NAMEPLACEHOLDER" # TODO: fill in the details
           rolling: true
           visibility: "public"
