@@ -1,0 +1,29 @@
+name: "Publish flake to FlakeHub"
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  flakehub-publish:
+    runs-on: "ubuntu-latest"
+    permissions:
+      id-token: "write"
+      contents: "read"
+    steps:
+      - name: "Checking out repository..."
+        uses: actions/checkout@v4
+
+      - name: "Installing and configuring the nix package manager..."
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: "Setting up magic-nix-cache..."
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: "Publishing flake to FlakeHub..."
+        uses: DeterminateSystems/flakehub-push@main
+        with:
+          name: "tsandrini/flake-parts-builder" 
+          rolling: true
+          visibility: "public"

@@ -1,227 +1,268 @@
+# --- flake.nix
 {
-  description = "PracticalFlakesTemplate - Highly opinionated nix flakes starter template that focuses on modularity.";
+  description = "Nix flakes interactive template builder based on flake-parts written in Rust.";
 
   inputs = {
-    # --- BASE DEPENDENCIES ---
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     systems.url = "github:nix-systems/default";
-
-    # --- DEV DEPENDENCIES ---
-    devenv.url = "github:cachix/devenv";
-    devenv-root = {
-      url = "file+file:///dev/null";
-      flake = false;
-    };
-    mk-shell-bin.url = "github:rrbutani/nix-mk-shell-bin";
-    nix2container = {
-      url = "github:nlewo/nix2container";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    treefmt-nix.url = "github:numtide/treefmt-nix";
-
-    # --- (YOUR) EXTRA DEPENDENCIES ---
-  };
-
-  # NOTE Here you can add additional binary cache substituers that you trust.
-  # There are also some sensible default caches commented out that you
-  # might consider using.
-  nixConfig = {
-    extra-substituters = [
-      "https://cache.nixos.org"
-      "https://nix-community.cachix.org/"
-      "https://devenv.cachix.org"
-      "https://tsandrini.cachix.org"
-    ];
-    extra-trusted-public-keys = [
-      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-      "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
-      "tsandrini.cachix.org-1:t0AzIUglIqwiY+vz/WRWXrOkDZN8TwY3gk+n+UDt4gw="
-    ];
   };
 
   outputs =
     inputs@{ flake-parts, ... }:
+    let
+      inherit (inputs.nixpkgs) lib;
+
+      tsandrini = {
+        email = "tomas.sandrini@seznam.cz";
+        name = "Tomáš Sandrini";
+        github = "tsandrini";
+        githubId = 21975189;
+      };
+
+      mkFlakeParts =
+        args@{ stdenv, ... }:
+        let
+          finalArgs = {
+            name = "flake-parts";
+            version = "1.0.0";
+
+            dontConfigure = true;
+            dontBuild = true;
+            dontCheck = true;
+
+            installPhase = ''
+              mkdir -p $out/flake-parts
+              cp -rv $src/* $out/flake-parts
+            '';
+          } // args;
+        in
+        stdenv.mkDerivation finalArgs;
+    in
     flake-parts.lib.mkFlake { inherit inputs; } {
-      imports = with inputs; [
-        treefmt-nix.flakeModule
-        devenv.flakeModule
-      ];
+
       systems = import inputs.systems;
 
-      flake = {
-        templates =
-          let
-            welcomeText = ''
-              Hi! You've just created a fresh new flakes project using the
-              practical-flakes-template. You can start by looking around or
-              running the development environment either via direnv (`direnv allow`)
+      flake.lib = rec {
+        inherit mkFlakeParts;
 
-              Furthermore don't forget to rename your project using
-              `rename-project . myAwesomeNewProject`
+        flatten = attrs: lib.collect (x: !lib.isAttrs x) attrs;
 
-              For more info refer to
-              https://github.com/tsandrini/practical-flakes-template/
-            '';
-          in
-          {
-            default = inputs.self.templates.main;
-            main = {
-              inherit welcomeText;
-              path = ./templates/main;
-              description = "Highly opinionated nix flakes starter template that focuses on modularity.";
-            };
+        mapFilterAttrs =
+          pred: f: attrs:
+          lib.filterAttrs pred (lib.mapAttrs' f attrs);
 
-            minimal = {
-              inherit welcomeText;
-              path = ./templates/minimal;
-              description = "Minimal version of the highly opiniated nix flakes starter template.";
-            };
+        mapModules =
+          dir: fn:
+          mapFilterAttrs (n: v: v != null && !(lib.hasPrefix "_" n) && !(lib.lib.hasPrefix ".git" n)) (
+            n: v:
+            let
+              path = "${toString dir}/${n}";
+            in
+            if v == "directory" && builtins.pathExists "${path}/default.nix" then
+              lib.nameValuePair n (fn path)
+            else if v == "directory" then
+              lib.nameValuePair n (mapModules path fn)
+            else if v == "regular" && n != "default.nix" && lib.hasSuffix ".nix" n then
+              lib.nameValuePair (lib.removeSuffix ".nix" n) (fn path)
+            else
+              lib.nameValuePair "" null
+          ) (builtins.readDir dir);
 
-            isolated = {
-              inherit welcomeText;
-              path = ./templates/isolated;
-              description = "Isolated (./nix) version of the highly opiniated nix flakes starter template.";
-            };
-
-            isolated-minimal = {
-              inherit welcomeText;
-              path = ./templates/isolated-minimal;
-              description = "Isolated (./nix) and minimal version of the highly opiniated nix flakes starter template.";
-            };
-
-            home = {
-              inherit welcomeText;
-              path = ./templates/home;
-              description = "Full version of the highly opiniated nix flakes starter template that includes prewired home-manager";
-            };
-          };
+        # NOTE In case anyone ditches _bootstrap and wants to use
+        # load-parts directly from here.
+        loadParts = dir: flatten (mapModules dir (x: x));
       };
 
       perSystem =
-        { config, pkgs, ... }:
         {
-          treefmt = {
-            package = pkgs.treefmt;
-            flakeCheck = true;
-            flakeFormatter = true;
-            projectRootFile = ./flake.nix;
-            programs = {
-              deadnix.enable = true;
-              statix.enable = true;
-              nixfmt-rfc-style.enable = true;
-              # NOTE Choose a different formatter if you'd like to
-              # nixfmt.enable = true;
-              # alejandra.enable = true;
+          config,
+          pkgs,
+          system,
+          ...
+        }:
+        {
+          packages = rec {
+            default = builder;
 
-              prettier.enable = true;
-              mdformat.enable = true;
-              yamlfmt.enable = true;
-              jsonfmt.enable = true;
+            builder =
+              let
+                package =
+                  {
+                    lib,
+                    rustPlatform,
+                    nixfmt-rfc-style,
+                    tsandrini,
+                  }:
+                  rustPlatform.buildRustPackage {
+                    name = "flake-parts-builder";
+                    version = "1.0.0";
 
-              shellcheck.enable = true;
-              shfmt.enable = true;
-            };
+                    src = [
+                      ./src
+                      ./Cargo.toml
+                      ./Cargo.lock
+                    ];
+
+                    unpackPhase = ''
+                      runHook preUnpack
+                      for srcItem in $src; do
+                        if [ -d "$srcItem" ]; then
+                          cp -r "$srcItem" $(stripHash "$srcItem")
+                        else
+                          cp "$srcItem" $(stripHash "$srcItem")
+                        fi
+                      done
+                      runHook postUnpack
+                    '';
+
+                    cargoSha256 = "sha256-JYCiIbStvpmO4CO3Sp7tMHUdWpFMKiveE5ATIyK0UVo=";
+
+                    buildInputs = [ nixfmt-rfc-style ];
+
+                    meta = with lib; {
+                      homepage = "https://github.com/tsandrini/flake-parts-builder";
+                      description = "Nix flakes interactive template builder based on flake-parts written in Rust.";
+                      license = licenses.mit;
+                      platforms = [ system ];
+                      maintainers = [ tsandrini ];
+                      mainProgram = "flake-parts-builder";
+                    };
+                  };
+              in
+              pkgs.callPackage package { inherit tsandrini; };
+
+            docs =
+              let
+                package =
+                  {
+                    lib,
+                    rustPlatform,
+                    builder,
+                  }:
+                  rustPlatform.buildRustPackage {
+                    inherit (builder) src unpackPhase version;
+                    name = "${builder.name}-docs";
+
+                    cargoSha256 = "sha256-Jsha+Aoe5R6g4H7KNX2VX62S+NGj1SrobeCakjgFw24=";
+
+                    doCheck = false;
+
+                    buildPhase = ''
+                      cargo doc --no-deps --release
+                    '';
+
+                    meta = builder.meta // {
+                      description = "Documentation for ${builder.meta.description}";
+                      mainProgram = null;
+                    };
+                  };
+              in
+              pkgs.callPackage package { inherit builder; };
+
+            flake-parts =
+              let
+                package =
+                  {
+                    lib,
+                    stdenv,
+                    tsandrini,
+                    mkFlakeParts,
+                  }:
+                  mkFlakeParts {
+                    inherit stdenv;
+                    name = "flake-parts";
+                    version = "1.0.0";
+                    src = ./flake-parts;
+
+                    meta = with lib; {
+                      homepage = "https://github.com/tsandrini/flake-parts-builder";
+                      description = "The base collection of flake-parts for the flake-parts-builder.";
+                      license = licenses.mit;
+                      platforms = [ system ];
+                      maintainers = [ tsandrini ];
+                    };
+                  };
+              in
+              pkgs.callPackage package { inherit tsandrini mkFlakeParts; };
+
+            flake-parts-bootstrap =
+              let
+                package =
+                  {
+                    lib,
+                    stdenv,
+                    tsandrini,
+                    mkFlakeParts,
+                  }:
+                  mkFlakeParts {
+                    inherit stdenv;
+                    name = "flake-parts-bootstrap";
+                    version = "1.0.0";
+                    src = ./flake-parts-bootstrap;
+
+                    meta = with lib; {
+                      homepage = "https://github.com/tsandrini/flake-parts-builder";
+                      description = "The base collection of flake-parts for the flake-parts-builder.";
+                      license = licenses.mit;
+                      platforms = [ system ];
+                      maintainers = [ tsandrini ];
+                    };
+                  };
+              in
+              pkgs.callPackage package { inherit tsandrini mkFlakeParts; };
           };
 
-          devenv.shells.dev = {
+          devShells = rec {
+            default = dev;
 
-            # --------------------------
-            # --- ENV & SHELL & PKGS ---
-            # --------------------------
-            packages = with pkgs; [
-              # -- NIX UTILS --
-              nix-output-monitor # Processes output of Nix commands to show helpful and pretty information
-              nixfmt-rfc-style # An opinionated formatter for Nix
-              # NOTE Choose a different formatter if you'd like to
-              # nixfmt # An opinionated formatter for Nix
-              # alejandra # The Uncompromising Nix Code Formatter
-              nh # Yet another nix cli helper
-
-              # -- GIT RELATED UTILS --
-              commitizen # Tool to create committing rules for projects, auto bump versions, and generate changelogs
-              cz-cli # The commitizen command line utility
-              fh # The official FlakeHub CLI
-              gh # GitHub CLI tool
-
-              # -- LANGUAGE RELATED UTILS --
-              markdownlint-cli # Command line interface for MarkdownLint
-              typos # Source code spell checker
-              config.treefmt.build.wrapper # one CLI to format the code tree
-
-              # -- (YOUR) EXTRA PKGS --
-              nodePackages.prettier # Prettier is an opinionated code formatter
-            ];
-
-            enterShell = ''
-              # Welcome splash text
-              echo ""; echo -e "\e[1;37;42mWelcome to the practicalFlakes devshell!\e[0m"; echo ""
-            '';
-
-            # ---------------
-            # --- SCRIPTS ---
-            # ---------------
-            scripts = {
-              "rename-project".exec = ''
-                find $1 \( -type d -name .git -prune \) -o -type f -print0 | xargs -0 sed -i "s/practicalFlakes/$2/g"
-              '';
-            };
-
-            # -----------------
-            # --- LANGUAGES ---
-            # -----------------
-            languages.nix.enable = true;
-
-            # ----------------------------
-            # --- PROCESSES & SERVICES ---
-            # ----------------------------
-
-            # ------------------
-            # --- CONTAINERS ---
-            # ------------------
-            devcontainer.enable = true;
-
-            # ----------------------
-            # --- BINARY CACHING ---
-            # ----------------------
-            # NOTE All available hooks options are listed at
-            # https://devenv.sh/reference/options/#pre-commithooks
-            pre-commit = {
-              hooks = {
-                treefmt.enable = true;
-                # We pass our custom treefmt build from parts/treefmt/treefmt.nix for
-                # devenv to use.
-                treefmt.package = config.treefmt.build.wrapper;
-
-                nil.enable = true; # Nix Language server, an incremental analysis assistant for writing in Nix.
-                markdownlint.enable = true; # Markdown lint tool
-                typos.enable = true; # Source code spell checker
-                editorconfig-checker.enable = true; # A tool to verify that your files are in harmony with your .editorconfig
-
-                actionlint.enable = true; # GitHub workflows linting
-                commitizen.enable = true; # Commitizen is release management tool designed for teams.
-              };
-            };
-
-            # --------------
-            # --- FLAKES ---
-            # --------------
-            devenv.flakesIntegration = true;
-
-            # This is currently needed for devenv to properly run in pure hermetic
-            # mode while still being able to run processes & services and modify
-            # (some parts) of the active shell.
-            devenv.root =
+            dev =
               let
-                devenvRootFileContent = builtins.readFile inputs.devenv-root.outPath;
-              in
-              pkgs.lib.mkIf (devenvRootFileContent != "") devenvRootFileContent;
+                package =
+                  {
+                    mkShell,
+                    nil,
+                    statix,
+                    deadnix,
+                    nix-output-monitor,
+                    nixfmt-rfc-style,
+                    commitizen,
+                    cz-cli,
+                    gh,
+                    gh-dash,
+                    markdownlint-cli,
+                  }:
+                  mkShell {
+                    buildInputs = [
+                      # -- NIX UTILS --
+                      nil # Yet another language server for Nix
+                      statix # Lints and suggestions for the nix programming language
+                      deadnix # Find and remove unused code in .nix source files
+                      nix-output-monitor # Processes output of Nix commands to show helpful and pretty information
+                      nixfmt-rfc-style # An opinionated formatter for Nix
 
-            # ---------------------
-            # --- MISCELLANEOUS ---
-            # ---------------------
-            difftastic.enable = true;
+                      # -- GIT RELATED UTILS --
+                      commitizen # Tool to create committing rules for projects, auto bump versions, and generate changelogs
+                      cz-cli # The commitizen command line utility
+                      # fh # The official FlakeHub CLI
+                      gh # GitHub CLI tool
+                      gh-dash # Github Cli extension to display a dashboard with pull requests and issues
+
+                      # -- BASE LANG UTILS --
+                      markdownlint-cli # Command line interface for MarkdownLint
+                      # nodePackages.prettier # Prettier is an opinionated code formatter
+                      # typos # Source code spell checker
+
+                      # -- (YOUR) EXTRA PKGS --
+                    ];
+
+                    shellHook = ''
+                      # Welcome splash text
+                      echo ""; echo -e "\e[1;37;42mWelcome to the flake-parts-builder devshell!\e[0m"; echo ""
+                    '';
+                  };
+              in
+              pkgs.callPackage package { };
           };
         };
     };
