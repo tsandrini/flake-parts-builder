@@ -1,7 +1,9 @@
 # flake-parts-builder
 
-[![flake check](https://github.com/tsandrini/flake-parts-builder/actions/workflows/check-on-merge.yml/badge.svg)](https://github.com/tsandrini/flake-parts-builder/actions/workflows/check-on-merge.yml)
-[![FlakeHub](https://github.com/tsandrini/flake-parts-builder/actions/workflows/flakehub.yml/badge.svg)](https://github.com/tsandrini/flake-parts-builder/actions/workflows/flakehub.yml)
+[![flake check](https://github.com/tsandrini/flake-parts-builder/actions/workflows/flake-check.yml/badge.svg)](https://github.com/tsandrini/flake-parts-builder/actions/workflows/flake-check.yml)
+[![FlakeHub](https://github.com/tsandrini/flake-parts-builder/actions/workflows/flakehub-publish.yml/badge.svg)](https://github.com/tsandrini/flake-parts-builder/actions/workflows/flakehub-publish.yml)
+[![cachix](https://github.com/tsandrini/flake-parts-builder/actions/workflows/cachix-push.yml/badge.svg)](https://github.com/tsandrini/flake-parts-builder/actions/workflows/cachix-push.yml)
+[![flake.lock update](https://github.com/tsandrini/flake-parts-builder/actions/workflows/update-flake-lock.yml/badge.svg)](https://github.com/tsandrini/flake-parts-builder/actions/workflows/update-flake-lock.yml)
 
 ## About 📝
 
@@ -79,7 +81,7 @@ nix profile install github:tsandrini/flake-parts-builder
 
 `flake-parts-builder` is written in Rust with minimal dependencies to ensure
 safety and consistency, however, there is also a binary cache available if you'd
-like to skip the build process. (TODO, push the damn thing xd)
+like to skip the build process. 
 
 ```nix
   nixConfig = {
