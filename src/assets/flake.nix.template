@@ -15,7 +15,7 @@ description = "TODO Add description of your new project";
 
   # NOTE Here you can add additional binary cache substituers that you trust.
   # There are also some sensible default caches commented out that you
-  # might consider using.
+  # might consider using, however, you are advised to doublecheck the keys.
   nixConfig = {
     extra-trusted-public-keys = [
       # "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
