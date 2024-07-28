@@ -132,6 +132,34 @@
               in
               pkgs.callPackage package { inherit tsandrini; };
 
+            docs =
+              let
+                package =
+                  {
+                    lib,
+                    rustPlatform,
+                    builder,
+                  }:
+                  rustPlatform.buildRustPackage {
+                    inherit (builder) src unpackPhase version;
+                    name = "${builder.name}-docs";
+
+                    cargoSha256 = "sha256-Jsha+Aoe5R6g4H7KNX2VX62S+NGj1SrobeCakjgFw24=";
+
+                    doCheck = false;
+
+                    buildPhase = ''
+                      cargo doc --no-deps --release
+                    '';
+
+                    meta = builder.meta // {
+                      description = "Documentation for ${builder.meta.description}";
+                      mainProgram = null;
+                    };
+                  };
+              in
+              pkgs.callPackage package { inherit builder; };
+
             flake-parts =
               let
                 package =
