@@ -1,5 +1,5 @@
 {
-  description = "Flake bindings for the cachix/devenv development environment.";
+  description = "Flake bindings for the `github:cachix/devenv` development environment.";
 
   inputs = {
     devenv.url = "github:cachix/devenv";
