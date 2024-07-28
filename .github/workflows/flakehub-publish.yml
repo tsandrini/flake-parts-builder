@@ -1,4 +1,5 @@
-name: "Publish flake to FlakeHub"
+# --- Publish flake to FlakeHub
+name: FlakeHub
 
 on:
   workflow_dispatch: # allows manual triggering from the Actions UI

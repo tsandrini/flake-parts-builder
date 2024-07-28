@@ -1,4 +1,5 @@
-name: "Periodically update flake inputs in flake.lock"
+# --- Periodically update flake inputs in flake.lock
+name: update-flake-lock
 
 on:
   workflow_dispatch: # allows manual triggering from the Actions UI

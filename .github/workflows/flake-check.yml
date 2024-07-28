@@ -1,4 +1,5 @@
-name: "Run `nix flake-check`"
+# --- Run `nix flake check`
+name: nix flake check
 
 on:
   workflow_dispatch: # allows manual triggering from the Actions UI
