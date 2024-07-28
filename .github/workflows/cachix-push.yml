@@ -20,7 +20,7 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: "Settings up cachix binary cache..."
-        uses: cachix/cachix-action@main
+        uses: cachix/cachix-action@v15
         with:
           name: tsandrini
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
