@@ -1,0 +1,32 @@
+name: "Periodically update flake inputs in flake.lock"
+
+on:
+  workflow_dispatch: # allows manual triggering
+  schedule:
+    - cron: "0 0 * * 0" # runs weekly on Sunday at 00:00
+
+jobs:
+  update-flake-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checking out repository..."
+        uses: actions/checkout@v4
+
+      - name: "Installing and configuring the nix package manager..."
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: "Setting up magic-nix-cache..."
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: "Updating flake.lock..."
+        uses: DeterminateSystems/update-flake-lock@main
+        with:
+          pr-title: "Automated action - Update flake.lock"
+          pr-labels: |
+            dependencies
+            automated
+          # NOTE You can use a personal access token to identify
+          # as a concrete user, this may be useful when you want to
+          # trigger additional CI actions.
+          #
+          token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
