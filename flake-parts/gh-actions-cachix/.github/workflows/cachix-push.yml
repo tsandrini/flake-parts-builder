@@ -1,13 +1,13 @@
-name: "Push packages and devshells to the cachix binary cache service"
+name: "Push packages & devshells to the cachix binary cache"
 
 on:
+  workflow_dispatch: # allows manual triggering from the Actions UI
   push:
     branches:
       - main
 
 jobs:
   flake-check:
-    if: false
     runs-on: "ubuntu-latest"
     steps:
       - name: "Checking out repository..."

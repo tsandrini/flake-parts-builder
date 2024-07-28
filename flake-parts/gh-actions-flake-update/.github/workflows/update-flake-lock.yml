@@ -1,7 +1,7 @@
 name: "Periodically update flake inputs in flake.lock"
 
 on:
-  workflow_dispatch: # allows manual triggering
+  workflow_dispatch: # allows manual triggering from the Actions UI
   schedule:
     - cron: "0 0 * * 0" # runs weekly on Sunday at 00:00
 
