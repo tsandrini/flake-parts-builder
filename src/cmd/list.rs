@@ -7,6 +7,7 @@ use crate::cmd::SharedArgs;
 use crate::config::{BASE_DERIVATION_NAME, BOOTSTRAP_DERIVATION_NAME, SELF_FLAKE_URI};
 use crate::parts::FlakePartsStore;
 
+/// List all available flake-parts in all parts stores provided by the user.
 #[derive(Debug, Args)]
 pub struct ListCommand {
     #[clap(flatten)]

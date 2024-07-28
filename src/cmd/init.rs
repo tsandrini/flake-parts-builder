@@ -70,7 +70,7 @@ pub struct InitCommand {
     pub force: bool,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+#[derive(Debug, Copy, Clone, PartialEq, ValueEnum)]
 pub enum InitStrategy {
     /// Skip file if already present in the filesystem
     #[clap(verbatim_doc_comment)]

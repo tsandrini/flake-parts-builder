@@ -1,5 +1,7 @@
 //! Nix flakes interactive template builder based on flake-parts written
 //! in Rust.
+//!
+//! TODO lorem ipsum
 use clap::{Parser, Subcommand};
 use color_eyre::eyre::Result;
 

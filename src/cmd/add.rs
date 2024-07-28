@@ -8,17 +8,18 @@ use crate::config::{BASE_DERIVATION_NAME, SELF_FLAKE_URI};
 use crate::parts::FlakePartsStore;
 use crate::templates::FlakeInputsContext;
 
+//    TODO: I might figure out a way to do this automatically in the future, but
+//    it's way too complicated for now.
 // TODO for some reason broken formatting
-/// Add additional flake-parts to an already initialized project. This is
-/// similar to the init command, but differs in two significant ways:
+/// Add additional flake-parts to an already initialized project.
+///
+/// This is similar to the init command, but differs in two significant ways:
 ///
 /// 1. No `_bootstrap` part is added, as the project is already bootstrapped.
-/// 2. `flake.nix` is left untouched as the user may have made manual changes.
+///
+/// 2. `flake.nix` is left untouched as the user may have already made manual changes.
 ///    Additional inputs will be printed to the console and the user is
 ///    advised to add them manually.
-///
-///    TODO: I might figure out a way to do this automatically in the future, but
-///    it's way too complicated for now.
 #[derive(Debug, Args)]
 pub struct AddCommand {
     #[clap(flatten)]
