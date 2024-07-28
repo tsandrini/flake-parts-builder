@@ -10,7 +10,7 @@ Need a template with all the necessary boilerplate, but none perfectly fits your
 needs? Just choose the parts that you need and **build your own**!
 
 ```bash
-nix run github:tsandrini/flake-parts-builder -- init -p +github,+nixos,shells,treefmt myNewProject
+nix run github:tsandrini/flake-parts-builder -- init -p +github,+nixos,treefmt myProject
 ```
 
 -----
