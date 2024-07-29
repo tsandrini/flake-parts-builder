@@ -27,5 +27,11 @@ jobs:
       - name: "Running `nix flake check`..."
         run: nix flake check --show-trace --accept-flake-config
 
+      - name: "Running `nix build ...`..."
+        run: |
+          nix build .#builder --show-trace --accept-flake-config
+          nix build .#flake-parts --show-trace --accept-flake-config
+          nix build .#flake-parts-bootstrap --show-trace --accept-flake-config
+
       - name: "Checking flake inputs for stale & insecure nixpkgs versions..."
         uses: DeterminateSystems/flake-checker-action@main
