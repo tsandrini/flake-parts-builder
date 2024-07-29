@@ -6,7 +6,8 @@ use std::fs;
 use std::path::PathBuf;
 use thiserror::Error;
 
-use crate::nix::{eval_meta_file, get_flake_store_path};
+use crate::config::META_FILE;
+use crate::nix::{eval_nix_file, get_flake_store_path};
 
 #[derive(Debug, Clone)]
 pub struct FlakePart {
@@ -171,7 +172,7 @@ impl FlakePart {
             .to_str()
             .ok_or(FlakePartParseError::InvalidPathError())?;
 
-        let eval_output = eval_meta_file(&nix_store_path)?;
+        let eval_output = eval_nix_file(&nix_store_path.join(META_FILE), true)?;
 
         let metadata: FlakePartMetadata = serde_json::from_str(&eval_output)
             .map_err(|e| FlakePartParseError::MetadataConversionError(e))?;

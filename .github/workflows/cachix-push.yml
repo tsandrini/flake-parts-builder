@@ -28,9 +28,9 @@ jobs:
 
       - name: "Building project packages..."
         run: |
-          nix build .#builder
-          nix build .#flake-parts
-          nix build .#flake-parts-bootstrap
+          nix build .#builder --show-trace --accept-flake-config
+          nix build .#flake-parts --show-trace --accept-flake-config
+          nix build .#flake-parts-bootstrap --show-trace --accept-flake-config
 
       - name: "Building project devshells..."
         run: nix develop --command echo OK
