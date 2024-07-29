@@ -27,7 +27,10 @@ jobs:
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: "Building project packages..."
-        run: nix build
+        run: |
+          nix build .#builder
+          nix build .#flake-parts
+          nix build .#flake-parts-bootstrap
 
       - name: "Building project devshells..."
         run: nix develop --command echo OK
