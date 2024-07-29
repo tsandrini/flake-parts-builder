@@ -120,6 +120,13 @@
 
                     buildInputs = [ nixfmt-rfc-style ];
 
+                    doCheck = true;
+                    checkPhase = ''
+                      runHook preCheck
+                      cargo test
+                      runHook postCheck
+                    '';
+
                     meta = with lib; {
                       homepage = "https://github.com/tsandrini/flake-parts-builder";
                       description = "Nix flakes interactive template builder based on flake-parts written in Rust.";
