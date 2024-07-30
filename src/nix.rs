@@ -4,26 +4,42 @@ use std::process::Command;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum EvalNixFileError {
+pub enum NixError {
     #[error("provided path is invalid: {0}")]
     InvalidPathError(PathBuf),
-
-    #[error("failed to run `nix eval --json --file` on: {0}")]
-    NixCommandError(#[from] std::io::Error),
-
+    #[error("failed to run nix command: {0}")]
+    NixCommandError(String),
     #[error("failed to convert output to utf8: {0}")]
     UTF8ConversionError(#[from] std::string::FromUtf8Error),
+    #[error("nix command not found. Please ensure 'nix' is installed and in your PATH.")]
+    NixNotFound,
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
 }
 
-pub fn eval_nix_file(path: &PathBuf, to_json: bool) -> Result<String, EvalNixFileError> {
-    if path.exists() == false {
-        return Err(EvalNixFileError::InvalidPathError(path.clone()));
-    }
+pub fn get_nix_binary() -> Option<PathBuf> {
+    std::env::var_os("NIX_BIN_PATH")
+        .map(PathBuf::from)
+        .or_else(|| which::which("nix").ok())
+}
+
+pub fn nix_command() -> Command {
+    let mut cmd = Command::new(get_nix_binary().expect("Nix executable not found"));
+    cmd.args(&[
+        "--extra-experimental-features",
+        "nix-command",
+        "--extra-experimental-features",
+        "flakes",
+    ]);
+    cmd
+}
+
+pub fn eval_nix_file(path: &PathBuf, to_json: bool) -> Result<String, NixError> {
     let path = path
         .to_str()
-        .ok_or_else(|| EvalNixFileError::InvalidPathError(path.clone()))?;
+        .ok_or_else(|| NixError::InvalidPathError(path.clone()))?;
 
-    let mut command = Command::new("nix");
+    let mut command = nix_command();
     command.arg("eval");
     command.arg("--file").arg(path);
     if to_json {
@@ -33,26 +49,29 @@ pub fn eval_nix_file(path: &PathBuf, to_json: bool) -> Result<String, EvalNixFil
     let output = command.output()?;
 
     if !output.status.success() {
-        return Err(EvalNixFileError::NixCommandError(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!(
-                "nix eval command failed with status: {:?}",
-                output.status.code()
-            ),
-        )));
+        return Err(NixError::NixCommandError(
+            String::from_utf8_lossy(&output.stderr).to_string(),
+        ));
     }
 
     let stdout = String::from_utf8(output.stdout)?;
     Ok(stdout.trim().to_string())
 }
 
-pub fn get_flake_store_path(flake_uri: &str) -> Result<PathBuf> {
-    let nix_info = Command::new("nix")
-        .args(["build", "--no-link", "--print-out-paths", &flake_uri])
-        .output()?;
+pub fn get_flake_store_path(flake_uri: &str) -> Result<PathBuf, NixError> {
+    let mut command = nix_command();
+    command.args(["build", "--no-link", "--print-out-paths", flake_uri]);
 
-    let output = String::from_utf8(nix_info.stdout)?;
-    Ok(PathBuf::from(output.trim()))
+    let output = command.output()?;
+
+    if !output.status.success() {
+        return Err(NixError::NixCommandError(
+            String::from_utf8_lossy(&output.stderr).to_string(),
+        ));
+    }
+
+    let stdout = String::from_utf8(output.stdout)?;
+    Ok(PathBuf::from(stdout.trim()))
 }
 
 pub fn nixfmt_file(path: &PathBuf) -> Result<()> {
@@ -107,14 +126,14 @@ mod tests {
     fn test_nonexistent_path() {
         let invalid_path = PathBuf::from("/nonexistent/path");
         let result = eval_nix_file(&invalid_path, true);
-        assert!(matches!(result, Err(EvalNixFileError::InvalidPathError(_))));
+        assert!(matches!(result, Err(NixError::NixCommandError(_))));
     }
 
     #[test]
     fn test_invalid_path() {
         let invalid_path = PathBuf::from("");
         let result = eval_nix_file(&invalid_path, true);
-        assert!(matches!(result, Err(EvalNixFileError::InvalidPathError(_))));
+        assert!(matches!(result, Err(NixError::NixCommandError(_))));
     }
 
     #[test]
@@ -191,7 +210,7 @@ mod tests {
         write!(file, "this is not a valid nix expression").unwrap();
 
         let result = eval_nix_file(&file_path, true);
-        assert!(matches!(result, Err(EvalNixFileError::NixCommandError(_))));
+        assert!(matches!(result, Err(NixError::NixCommandError(_))));
     }
 
     #[test]

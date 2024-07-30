@@ -92,6 +92,7 @@
                     lib,
                     rustPlatform,
                     nixfmt-rfc-style,
+                    nix,
                     tsandrini,
                   }:
                   rustPlatform.buildRustPackage {
@@ -116,14 +117,32 @@
                       runHook postUnpack
                     '';
 
-                    cargoSha256 = "sha256-JYCiIbStvpmO4CO3Sp7tMHUdWpFMKiveE5ATIyK0UVo=";
+                    cargoSha256 = "sha256-8LlvOf5llQE2NSAXYdRnoX5vob0WxcUGARO47eV1oYE=";
 
-                    buildInputs = [ nixfmt-rfc-style ];
+                    buildInputs = [
+                      nixfmt-rfc-style
+                      nix
+                    ];
+
+                    NIX_BIN_PATH = "${nix}/bin/nix";
 
                     doCheck = true;
                     checkPhase = ''
                       runHook preCheck
-                      cargo test
+                      dirs=(store var var/nix var/log/nix etc home)
+
+                      for dir in $dirs; do
+                        mkdir -p "$TMPDIR/$dir"
+                      done
+
+                      export NIX_STORE_DIR=$TMPDIR/store
+                      export NIX_LOCALSTATE_DIR=$TMPDIR/var
+                      export NIX_STATE_DIR=$TMPDIR/var/nix
+                      export NIX_LOG_DIR=$TMPDIR/var/log/nix
+                      export NIX_CONF_DIR=$TMPDIR/etc
+                      export HOME=$TMPDIR/home
+
+                      cargo test --frozen --release
                       runHook postCheck
                     '';
 
@@ -137,7 +156,10 @@
                     };
                   };
               in
-              pkgs.callPackage package { inherit tsandrini; };
+              pkgs.callPackage package {
+                inherit tsandrini;
+                nix = pkgs.nixVersions.stable;
+              };
 
             docs =
               let
