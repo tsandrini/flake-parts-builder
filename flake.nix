@@ -82,8 +82,8 @@
           ...
         }:
         {
-          packages = rec {
-            default = builder;
+          packages = {
+            default = config.packages.builder;
 
             builder =
               let
@@ -126,26 +126,6 @@
 
                     NIX_BIN_PATH = "${nix}/bin/nix";
 
-                    doCheck = true;
-                    checkPhase = ''
-                      runHook preCheck
-                      dirs=(store var var/nix var/log/nix etc home)
-
-                      for dir in $dirs; do
-                        mkdir -p "$TMPDIR/$dir"
-                      done
-
-                      export NIX_STORE_DIR=$TMPDIR/store
-                      export NIX_LOCALSTATE_DIR=$TMPDIR/var
-                      export NIX_STATE_DIR=$TMPDIR/var/nix
-                      export NIX_LOG_DIR=$TMPDIR/var/log/nix
-                      export NIX_CONF_DIR=$TMPDIR/etc
-                      export HOME=$TMPDIR/home
-
-                      cargo test --frozen --release
-                      runHook postCheck
-                    '';
-
                     meta = with lib; {
                       homepage = "https://github.com/tsandrini/flake-parts-builder";
                       description = "Nix flakes interactive template builder based on flake-parts written in Rust.";
@@ -175,19 +155,17 @@
 
                     cargoSha256 = "sha256-Jsha+Aoe5R6g4H7KNX2VX62S+NGj1SrobeCakjgFw24=";
 
-                    doCheck = false;
-
                     buildPhase = ''
                       cargo doc --no-deps --release
                     '';
 
                     meta = builder.meta // {
-                      description = "Documentation for ${builder.meta.description}";
+                      description = "Documentation for the ${builder.meta.description}";
                       mainProgram = null;
                     };
                   };
               in
-              pkgs.callPackage package { inherit builder; };
+              pkgs.callPackage package { inherit (config.packages) builder; };
 
             flake-parts =
               let
@@ -242,8 +220,63 @@
               pkgs.callPackage package { inherit tsandrini mkFlakeParts; };
           };
 
-          devShells = rec {
-            default = dev;
+          checks = {
+            builder-tests =
+              let
+                package =
+                  {
+                    lib,
+                    rustPlatform,
+                    builder,
+                  }:
+                  rustPlatform.buildRustPackage {
+                    inherit (builder)
+                      src
+                      unpackPhase
+                      version
+                      buildInputs
+                      NIX_BIN_PATH
+                      ;
+                    name = "${builder.name}-tests";
+
+                    cargoSha256 = "sha256-CPAaHaELJlWEsYgI8zkesLJQO5zJzLz17HINoIloa9c=";
+
+                    dontBuild = true;
+                    dontInstall = true;
+                    doCheck = true;
+
+                    checkPhase = ''
+                      runHook preCheck
+                      dirs=(store var var/nix var/log/nix etc home)
+
+                      for dir in $dirs; do
+                        mkdir -p "$TMPDIR/$dir"
+                      done
+
+                      export NIX_STORE_DIR=$TMPDIR/store
+                      export NIX_LOCALSTATE_DIR=$TMPDIR/var
+                      export NIX_STATE_DIR=$TMPDIR/var/nix
+                      export NIX_LOG_DIR=$TMPDIR/var/log/nix
+                      export NIX_CONF_DIR=$TMPDIR/etc
+                      export HOME=$TMPDIR/home
+
+                      cargo test --frozen --release
+                      mkdir -p $out && touch $out/test-success
+
+                      runHook postCheck
+                    '';
+
+                    meta = builder.meta // {
+                      description = "Test suite for the ${builder.meta.description}";
+                      mainProgram = null;
+                    };
+                  };
+              in
+              pkgs.callPackage package { inherit (config.packages) builder; };
+          };
+
+          devShells = {
+            default = config.devShells.dev;
 
             dev =
               let
