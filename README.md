@@ -26,6 +26,9 @@ such domain.
 
 And this is what `flake-parts-builder` solves! It serves as a
 **dynamic extension** to `nix flake init -t`, nothing more, nothing less!
+So let's forget about `nix flake init -t` and embrace `nix run` instead :sunglasses:
+
+-----
 
 Okay, but what exactly does it do then?
 
@@ -105,6 +108,7 @@ parts using `--disable-base` if you wish so)
 ```bash
 flake-parts-builder list
 ```
+
 ```md
  # github:tsandrini/flake-parts-builder#flake-parts
   - +github: (Collection) GitHub related parts
@@ -220,14 +224,53 @@ an attrset with the following structure.
 - `extraSubstituters`: merged with all of the required parts and pasted into the
   final `flake.nix`, for security purposes they are all commented out
 
-## FAQ 🗣️
+## Additional questions, issues 🗣️
 
-### 1. Why not use `flake.templates` instead?
+### How can I use a custom version of the `nix` binary?
 
-### 2. Can't we just stuff this functionality into flakeModules?
+If installed via the nix package manager, `flake-parts-builder` will use
+an isolated version of `pkgs.nixVersions.stable` with
+`--extra-experimental-features 'nix-command flakes'` enabled. However, if you'd
+like to use a custom version instead, simply pass it via `$NIX_BIN_PATH`,
+for example
+
+```bash
+NIX_BIN_PATH=/bin/patched-nix flake-parts-builder init -p +home-manager,shells myNewProject
+```
+
+### Why not use `flake.templates` instead?
+
+The `flake.templates` flake output is a static property by design that needs
+to point to a fixed path with fixed content known ahead of time, which makes
+it heavily impractical for any kind of dynamic evaluation. One could,
+given the set of parts, prepare all of the possible combination of templates
+with some patching script and
+directly update the source code of `flake.nix`, however ... At the time of
+this writing there are currently $27+1$ flake parts provided by this flake in
+the base collection of parts, which would result in
+
+```math
+2^{28} - 1 = 268435455
+```
+
+total combinations of templates and with an average part size of
+$8.59 \pm 2.60$ KB this would result in $2.14$ total terabytes of data
+with just one part per template. :skull:
+
+I hope this is enough of an answer.
+
+### Can't we just stuff this functionality into `flakeModules`?
 
 I totally agree there is a fine line between a reusable piece of functionality
 and boilerplate template code and I personally can't think of a general enough
 definition that would discern them and also be somehow useful. However, I do
-believe there is a practical clearly visible difference between them that most
+believe there is a practical, clearly visible difference between them that most
 programmers can just simply look and see, let's for example take ....
+[devenv/dev.nix](flake-parts/devenv/flake-parts/devenv/dev.nix) or
+[nix-topology/topology.nix](flake-parts/nix-topology/flake-parts/nix-topology/topology.nix)
+or even
+[flake-check.yml](flake-parts/gh-actions-check/.github/workflows/flake-check.yml),
+you can clearly **"see"** that this isn't a good candidate for a `flakeModule`,
+they are too specific, they typically represent the end user options of some
+existing `flakeModule`s. Wrapping this code into another layer of modularity
+doesn't make sense, since this is meant to be a piece of configuration code.
