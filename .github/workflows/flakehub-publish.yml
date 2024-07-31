@@ -19,6 +19,9 @@ jobs:
 
       - name: "Installing and configuring the nix package manager..."
         uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            accept-flake-config = true
 
       - name: "Setting up magic-nix-cache..."
         uses: DeterminateSystems/magic-nix-cache-action@main

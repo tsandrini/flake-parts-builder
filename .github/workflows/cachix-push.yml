@@ -16,6 +16,9 @@ jobs:
 
       - name: "Installing and configuring the nix package manager..."
         uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            accept-flake-config = true
 
       - name: "Setting up magic-nix-cache..."
         uses: DeterminateSystems/magic-nix-cache-action@main
@@ -26,12 +29,13 @@ jobs:
           name: tsandrini
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-      - name: "Building project packages..."
+      # NOTE Install any necessary packages here
+      - name: "Setting up packages..."
         run: |
-          nix build .#builder --show-trace --accept-flake-config
-          nix build .#flake-parts --show-trace --accept-flake-config
-          nix build .#flake-parts-bootstrap --show-trace --accept-flake-config
+          nix profile install nixpkgs#nix-fast-build # parallel nix builder
 
-      - name: "Building project devshells..."
-        run: nix develop --command echo OK
+      - name: "Building project packages..."
+        run: nix-fast-build -- --skip-cached --no-nom --flake ".#packages"
 
+      - name: "Building project devShells..."
+        run: nix-fast-build -- --skip-cached --no-nom --flake ".#devShells"
