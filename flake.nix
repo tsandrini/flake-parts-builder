@@ -134,6 +134,15 @@
 
                     cargoSha256 = "sha256-ZuehJ7qF+7jyTHsvQLr7V1xfBhTw10OrlFdPk9CU9XE=";
 
+                    postBuild = ''
+                      cargo doc --no-deps --release
+                    '';
+
+                    postInstall = ''
+                      mkdir -p $out/doc
+                      cp -r target/doc $out/
+                    '';
+
                     buildInputs = [
                       nixfmt-rfc-style
                       nix
@@ -155,32 +164,6 @@
                 inherit tsandrini;
                 nix = pkgs.nixVersions.stable;
               };
-
-            docs =
-              let
-                package =
-                  {
-                    lib,
-                    rustPlatform,
-                    builder,
-                  }:
-                  rustPlatform.buildRustPackage {
-                    inherit (builder) src unpackPhase version;
-                    name = "${builder.name}-docs";
-
-                    cargoSha256 = "sha256-Jsha+Aoe5R6g4H7KNX2VX62S+NGj1SrobeCakjgFw24=";
-
-                    buildPhase = ''
-                      cargo doc --no-deps --release
-                    '';
-
-                    meta = builder.meta // {
-                      description = "Documentation for the ${builder.meta.description}";
-                      mainProgram = null;
-                    };
-                  };
-              in
-              pkgs.callPackage package { inherit (config.packages) builder; };
 
             flake-parts =
               let
