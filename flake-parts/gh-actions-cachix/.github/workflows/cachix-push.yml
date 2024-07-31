@@ -38,7 +38,7 @@ jobs:
           nix profile install nixpkgs#nix-fast-build # parallel nix builder
 
       - name: "Building project packages..."
-        run: nix-fast-build -- --skip-cached --no-nom --flake ".#packages"
+        run: nix-fast-build --skip-cached --no-nom --flake ".#packages"
 
       - name: "Building project devShells..."
-        run: nix-fast-build -- --skip-cached --no-nom --flake ".#devShells"
+        run: nix-fast-build --skip-cached --no-nom --flake ".#devShells"

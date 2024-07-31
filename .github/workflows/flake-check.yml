@@ -33,10 +33,10 @@ jobs:
           nix profile install nixpkgs#nix-fast-build # parallel nix builder
 
       - name: "Running `nix flake check`..."
-        run: nix-fast-build -- --skip-cached --no-nom
+        run: nix-fast-build --skip-cached --no-nom
 
       - name: "Running `nix build ...`..."
-        run: nix-fast-build -- --skip-cached --no-nom --flake ".#packages"
+        run: nix-fast-build --skip-cached --no-nom --flake ".#packages"
 
       - name: "Checking flake inputs for stale & insecure nixpkgs versions..."
         uses: DeterminateSystems/flake-checker-action@main
