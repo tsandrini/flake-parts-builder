@@ -117,6 +117,21 @@
                       runHook postUnpack
                     '';
 
+                    preCheck = ''
+                      dirs=(store var var/nix var/log/nix etc home)
+
+                      for dir in $dirs; do
+                        mkdir -p "$TMPDIR/$dir"
+                      done
+
+                      export NIX_STORE_DIR=$TMPDIR/store
+                      export NIX_LOCALSTATE_DIR=$TMPDIR/var
+                      export NIX_STATE_DIR=$TMPDIR/var/nix
+                      export NIX_LOG_DIR=$TMPDIR/var/log/nix
+                      export NIX_CONF_DIR=$TMPDIR/etc
+                      export HOME=$TMPDIR/home
+                    '';
+
                     cargoSha256 = "sha256-ZuehJ7qF+7jyTHsvQLr7V1xfBhTw10OrlFdPk9CU9XE=";
 
                     buildInputs = [
@@ -218,61 +233,6 @@
                   };
               in
               pkgs.callPackage package { inherit tsandrini mkFlakeParts; };
-          };
-
-          checks = {
-            builder-tests =
-              let
-                package =
-                  {
-                    lib,
-                    rustPlatform,
-                    builder,
-                  }:
-                  rustPlatform.buildRustPackage {
-                    inherit (builder)
-                      src
-                      unpackPhase
-                      version
-                      buildInputs
-                      NIX_BIN_PATH
-                      ;
-                    name = "${builder.name}-tests";
-
-                    cargoSha256 = "sha256-CPAaHaELJlWEsYgI8zkesLJQO5zJzLz17HINoIloa9c=";
-
-                    dontBuild = true;
-                    dontInstall = true;
-                    doCheck = true;
-
-                    checkPhase = ''
-                      runHook preCheck
-                      dirs=(store var var/nix var/log/nix etc home)
-
-                      for dir in $dirs; do
-                        mkdir -p "$TMPDIR/$dir"
-                      done
-
-                      export NIX_STORE_DIR=$TMPDIR/store
-                      export NIX_LOCALSTATE_DIR=$TMPDIR/var
-                      export NIX_STATE_DIR=$TMPDIR/var/nix
-                      export NIX_LOG_DIR=$TMPDIR/var/log/nix
-                      export NIX_CONF_DIR=$TMPDIR/etc
-                      export HOME=$TMPDIR/home
-
-                      cargo test --frozen --release
-                      mkdir -p $out && touch $out/test-success
-
-                      runHook postCheck
-                    '';
-
-                    meta = builder.meta // {
-                      description = "Test suite for the ${builder.meta.description}";
-                      mainProgram = null;
-                    };
-                  };
-              in
-              pkgs.callPackage package { inherit (config.packages) builder; };
           };
 
           devShells = {
