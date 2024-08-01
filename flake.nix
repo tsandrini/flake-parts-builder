@@ -132,7 +132,7 @@
                       export HOME=$TMPDIR/home
                     '';
 
-                    cargoSha256 = "sha256-vMnU9PVZz61Tp/W9Rz4FPePyXYqzPAKsk9XAFc4rfo8=";
+                    cargoSha256 = "sha256-Rhc9Zxf8YMXRsxQJzcRfRhe02hcQ3XrxyDzcaYBpy0E=";
 
                     postBuild = ''
                       cargo doc --no-deps --release
