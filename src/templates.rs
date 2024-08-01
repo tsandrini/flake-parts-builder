@@ -248,7 +248,6 @@ mod tests {
         let context = FlakeContext::new(inputs_context, trusted_keys, substituters);
 
         let rendered = context.render()?;
-        println!("{}", rendered);
         let cleaned_rendered = rendered.split_whitespace().collect::<String>();
 
         let expected = r#"

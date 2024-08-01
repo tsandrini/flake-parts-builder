@@ -5,6 +5,7 @@ use tempfile::tempdir;
 
 use crate::cmd::init::{parse_required_parts_tuples, prepare_tmpdir, InitCommand};
 use crate::config::{BASE_DERIVATION_NAME, SELF_FLAKE_URI};
+use crate::nix::NixCmdInterface;
 use crate::parts::FlakePartsStore;
 use crate::templates::FlakeInputsContext;
 
@@ -26,7 +27,7 @@ pub struct AddCommand {
     pub init: InitCommand,
 }
 
-pub fn add(mut cmd: AddCommand) -> Result<()> {
+pub fn add(mut cmd: AddCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
     if !cmd.init.shared_args.disable_base_parts {
         cmd.init
             .shared_args
@@ -40,7 +41,7 @@ pub fn add(mut cmd: AddCommand) -> Result<()> {
         .shared_args
         .parts_stores
         .iter()
-        .map(|store| FlakePartsStore::from_flake_uri(&store))
+        .map(|store| FlakePartsStore::from_flake_uri(&store, &nix_cmd))
         .collect::<Result<Vec<_>>>()?;
 
     let parts_tuples = parse_required_parts_tuples(&cmd.init, &stores)?;
@@ -58,6 +59,7 @@ pub fn add(mut cmd: AddCommand) -> Result<()> {
 
     let tmpdir = tempdir()?;
     prepare_tmpdir(
+        &nix_cmd,
         &tmpdir,
         &parts_tuples,
         path.to_str(),

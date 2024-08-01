@@ -11,7 +11,7 @@ use crate::config::{
     BASE_DERIVATION_NAME, BOOTSTRAP_DERIVATION_NAME, META_FILE, NAMEPLACEHOLDER, SELF_FLAKE_URI,
 };
 use crate::fs_utils::{regex_in_dir_recursive, reset_permissions};
-use crate::nix::nixfmt_file;
+use crate::nix::NixCmdInterface;
 use crate::parts::{FlakePartTuple, FlakePartsStore};
 use crate::templates::FlakeContext;
 
@@ -125,9 +125,6 @@ pub fn parse_required_parts_tuples<'a>(
 
     let user_req_flake_strings = cmd.parts.clone();
 
-    // TODO remove
-    println!("User required parts: {:?}", user_req_flake_strings);
-
     let (resolved_deps, unresolved_deps) = {
         let start_indices: Vec<usize> = all_parts_tuples
             .iter()
@@ -155,9 +152,6 @@ pub fn parse_required_parts_tuples<'a>(
         .chain(resolved_deps.iter())
         .collect::<Vec<_>>();
 
-    // TODO remove
-    println!("All required parts: {:?}", all_req_flake_strings);
-
     let final_parts_tuples = all_parts_tuples
         .into_iter()
         .filter(|part_tuple| {
@@ -167,14 +161,6 @@ pub fn parse_required_parts_tuples<'a>(
                 .any(|&req| req == &flake_uri || req == &part_tuple.part.name)
         })
         .collect::<Vec<_>>();
-
-    let final_parts_uris = final_parts_tuples
-        .iter()
-        .map(|flake_part| flake_part.to_flake_uri(None))
-        .collect::<Vec<_>>();
-
-    // TODO remove
-    println!("Final parts: {:?}", final_parts_uris);
 
     let missing_parts =
         FlakePartTuple::find_missing_parts_in(&final_parts_tuples, &user_req_flake_strings);
@@ -204,6 +190,7 @@ pub fn parse_required_parts_tuples<'a>(
 }
 
 pub fn prepare_tmpdir(
+    nix_cmd: &impl NixCmdInterface,
     tmpdir: &TempDir,
     parts_tuples: &Vec<FlakePartTuple>,
     target_name: Option<&str>,
@@ -225,7 +212,6 @@ pub fn prepare_tmpdir(
 
     // TODO fails if no META_FILE is present
     // check if meta exists and delete it if yes
-
     std::fs::remove_file(tmp_path.join(META_FILE))?;
 
     reset_permissions(tmp_path.to_str().unwrap())?;
@@ -240,7 +226,8 @@ pub fn prepare_tmpdir(
 
         let rendered = flake_context.render()?;
         fs::write(tmp_path.join("flake.nix"), rendered)?;
-        nixfmt_file(&tmp_path.join("flake.nix"))?;
+        nix_cmd.nixfmt_file(&tmp_path.join("flake.nix"))?;
+        // nixfmt_file(&tmp_path.join("flake.nix"))?;
     }
 
     // This becomes None when `.`, `../`,etc... is passed
@@ -251,7 +238,7 @@ pub fn prepare_tmpdir(
     Ok(())
 }
 
-pub fn init(mut cmd: InitCommand) -> Result<()> {
+pub fn init(mut cmd: InitCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
     if !cmd.shared_args.disable_base_parts {
         cmd.shared_args
             .parts_stores
@@ -272,7 +259,7 @@ pub fn init(mut cmd: InitCommand) -> Result<()> {
         .shared_args
         .parts_stores
         .iter()
-        .map(|store| FlakePartsStore::from_flake_uri(&store))
+        .map(|store| FlakePartsStore::from_flake_uri(&store, &nix_cmd))
         .collect::<Result<Vec<_>>>()?;
 
     let parts_tuples = parse_required_parts_tuples(&cmd, &stores)?;
@@ -284,7 +271,14 @@ pub fn init(mut cmd: InitCommand) -> Result<()> {
     }
 
     let tmpdir = tempdir()?;
-    prepare_tmpdir(&tmpdir, &parts_tuples, path.to_str(), &cmd.strategy, true)?;
+    prepare_tmpdir(
+        &nix_cmd,
+        &tmpdir,
+        &parts_tuples,
+        path.to_str(),
+        &cmd.strategy,
+        true,
+    )?;
 
     dir::copy(
         &tmpdir,

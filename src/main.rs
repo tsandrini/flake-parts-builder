@@ -15,6 +15,7 @@ pub mod templates;
 use crate::cmd::add::{add, AddCommand};
 use crate::cmd::init::{init, InitCommand};
 use crate::cmd::list::{list, ListCommand};
+use crate::nix::NixExecutor;
 
 /// Nix flakes interactive template builder based on flake-parts written
 /// in Rust.
@@ -33,16 +34,16 @@ enum Commands {
 }
 
 // TODO add logging
-// TODO add tests
 // TODO better docs
 fn main() -> Result<()> {
     color_eyre::install()?;
     let cli = Cli::parse();
+    let nix_cmd = NixExecutor::from_env()?;
 
     match cli.command {
-        Commands::Init(cmd) => init(cmd),
-        Commands::List(cmd) => list(cmd),
-        Commands::Add(cmd) => add(cmd),
+        Commands::List(cmd) => list(cmd, nix_cmd),
+        Commands::Init(cmd) => init(cmd, nix_cmd),
+        Commands::Add(cmd) => add(cmd, nix_cmd),
     }
 }
 
