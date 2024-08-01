@@ -1,6 +1,6 @@
 # --- flake.nix
 {
-description = "TODO Add description of your new project";
+  description = "TODO Add description of your new project";
 
   inputs = {
     # --- BASE DEPENDENCIES ---

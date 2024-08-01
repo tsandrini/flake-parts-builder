@@ -6,7 +6,8 @@ use std::fs;
 use std::path::PathBuf;
 use thiserror::Error;
 
-use crate::nix::{eval_meta_file, get_flake_store_path};
+use crate::config::META_FILE;
+use crate::nix::NixCmdInterface;
 
 #[derive(Debug, Clone)]
 pub struct FlakePart {
@@ -26,11 +27,13 @@ pub struct FlakePartTuple<'a> {
 
 pub fn normalize_flake_string(target: &str, flake: &str, derivation: Option<&str>) -> String {
     if target.contains('#') {
-        target.to_string()
+        target.to_string() // OK
+    } else if flake.contains('#') {
+        format!("{}/{}", flake, target)
     } else if let Some(derivation) = derivation {
         format!("{}#{}/{}", flake, derivation, target)
     } else {
-        format!("{}/{}", flake, target)
+        format!("{}#default/{}", flake, target)
     }
 }
 
@@ -164,14 +167,14 @@ impl FlakePart {
         }
     }
 
-    pub fn from_path(nix_store_path: PathBuf) -> Result<Self> {
+    pub fn from_path(nix_store_path: PathBuf, nix_cmd: &impl NixCmdInterface) -> Result<Self> {
         let name = nix_store_path
             .file_name()
             .ok_or(FlakePartParseError::InvalidPathError())?
             .to_str()
             .ok_or(FlakePartParseError::InvalidPathError())?;
 
-        let eval_output = eval_meta_file(&nix_store_path)?;
+        let eval_output = nix_cmd.eval_nix_file(&nix_store_path.join(META_FILE), true)?;
 
         let metadata: FlakePartMetadata = serde_json::from_str(&eval_output)
             .map_err(|e| FlakePartParseError::MetadataConversionError(e))?;
@@ -202,17 +205,84 @@ impl FlakePartsStore {
     }
 
     // TODO handle errors
-    pub fn from_flake_uri(flake_uri: &str) -> Result<Self> {
-        let nix_store_path = get_flake_store_path(flake_uri)?;
+    pub fn from_flake_uri(flake_uri: &str, nix_cmd: &impl NixCmdInterface) -> Result<Self> {
+        let nix_store_path = nix_cmd.store_path_of_flake(flake_uri)?;
 
         let parts = fs::read_dir(nix_store_path.join("flake-parts"))?
             .map(|entry| {
                 let entry = entry?;
 
-                Ok(FlakePart::from_path(entry.path())?)
+                Ok(FlakePart::from_path(entry.path(), nix_cmd)?)
             })
             .collect::<Result<_>>()?;
 
         Ok(Self::new(flake_uri.to_string(), nix_store_path, parts))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_normalize_flake_string_with_hash_in_target() {
+        let result = normalize_flake_string("github:user/repo#output", "unused", None);
+        assert_eq!(result, "github:user/repo#output");
+    }
+
+    #[test]
+    fn test_normalize_flake_string_with_hash_in_flake() {
+        let result = normalize_flake_string("output", "github:user/repo#derivation", None);
+        assert_eq!(result, "github:user/repo#derivation/output");
+    }
+
+    #[test]
+    fn test_normalize_flake_string_with_derivation() {
+        let result = normalize_flake_string("target", "github:user/repo", Some("derivation"));
+        assert_eq!(result, "github:user/repo#derivation/target");
+    }
+
+    #[test]
+    fn test_normalize_flake_string_without_derivation() {
+        let result = normalize_flake_string("target", "github:user/repo", None);
+        assert_eq!(result, "github:user/repo#default/target");
+    }
+
+    #[test]
+    fn test_normalize_flake_string_with_empty_target() {
+        let result = normalize_flake_string("", "github:user/repo", Some("derivation"));
+        assert_eq!(result, "github:user/repo#derivation/");
+    }
+
+    #[test]
+    fn test_normalize_flake_string_with_empty_target_and_no_derivation() {
+        let result = normalize_flake_string("", "github:user/repo", None);
+        assert_eq!(result, "github:user/repo#default/");
+    }
+
+    #[test]
+    fn test_normalize_flake_string_with_complex_target() {
+        let result =
+            normalize_flake_string("path/to/target", "github:user/repo", Some("derivation"));
+        assert_eq!(result, "github:user/repo#derivation/path/to/target");
+    }
+
+    #[test]
+    fn test_normalize_flake_string_with_hash_in_flake_and_derivation() {
+        let result =
+            normalize_flake_string("output", "github:user/repo#derivation", Some("unused"));
+        assert_eq!(result, "github:user/repo#derivation/output");
+    }
+
+    #[test]
+    fn test_normalize_flake_string_with_local_path() {
+        let result = normalize_flake_string("target", "./local/path", Some("derivation"));
+        assert_eq!(result, "./local/path#derivation/target");
+    }
+
+    #[test]
+    fn test_normalize_flake_string_with_hash_in_flake_and_target() {
+        let result = normalize_flake_string("output#extra", "github:user/repo#branch", None);
+        assert_eq!(result, "output#extra");
     }
 }

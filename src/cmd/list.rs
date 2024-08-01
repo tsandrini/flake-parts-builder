@@ -5,6 +5,7 @@ use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 use crate::cmd::SharedArgs;
 use crate::config::{BASE_DERIVATION_NAME, BOOTSTRAP_DERIVATION_NAME, SELF_FLAKE_URI};
+use crate::nix::NixCmdInterface;
 use crate::parts::FlakePartsStore;
 
 /// List all available flake-parts in all parts stores provided by the user.
@@ -14,14 +15,16 @@ pub struct ListCommand {
     pub shared_args: SharedArgs,
 }
 
-pub fn list(mut cmd: ListCommand) -> Result<()> {
+pub fn list(mut cmd: ListCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
     if !cmd.shared_args.disable_base_parts {
+        log::info!("Adding base parts store to `cmd.shared_args.parts_stores`");
         cmd.shared_args
             .parts_stores
             .push(format!("{}#{}", SELF_FLAKE_URI, BASE_DERIVATION_NAME));
     }
 
     // NOTE this one is required even if you disable base store parts
+    log::info!("Adding bootstrap parts store to `cmd.shared_args.parts_stores`");
     cmd.shared_args
         .parts_stores
         .push(format!("{}#{}", SELF_FLAKE_URI, BOOTSTRAP_DERIVATION_NAME));
@@ -36,7 +39,7 @@ pub fn list(mut cmd: ListCommand) -> Result<()> {
             writeln!(&mut stdout, " # {}", flake_uri)?;
 
             // TODO maybe some error message instead of unwrap?
-            FlakePartsStore::from_flake_uri(&flake_uri)
+            FlakePartsStore::from_flake_uri(&flake_uri, &nix_cmd)
                 .unwrap()
                 .parts
                 .iter()

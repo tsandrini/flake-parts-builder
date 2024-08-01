@@ -82,8 +82,8 @@
           ...
         }:
         {
-          packages = rec {
-            default = builder;
+          packages = {
+            default = config.packages.builder;
 
             builder =
               let
@@ -92,6 +92,7 @@
                     lib,
                     rustPlatform,
                     nixfmt-rfc-style,
+                    nix,
                     tsandrini,
                   }:
                   rustPlatform.buildRustPackage {
@@ -116,9 +117,38 @@
                       runHook postUnpack
                     '';
 
-                    cargoSha256 = "sha256-JYCiIbStvpmO4CO3Sp7tMHUdWpFMKiveE5ATIyK0UVo=";
+                    preCheck = ''
+                      dirs=(store var var/nix var/log/nix etc home)
 
-                    buildInputs = [ nixfmt-rfc-style ];
+                      for dir in $dirs; do
+                        mkdir -p "$TMPDIR/$dir"
+                      done
+
+                      export NIX_STORE_DIR=$TMPDIR/store
+                      export NIX_LOCALSTATE_DIR=$TMPDIR/var
+                      export NIX_STATE_DIR=$TMPDIR/var/nix
+                      export NIX_LOG_DIR=$TMPDIR/var/log/nix
+                      export NIX_CONF_DIR=$TMPDIR/etc
+                      export HOME=$TMPDIR/home
+                    '';
+
+                    cargoSha256 = "sha256-vMnU9PVZz61Tp/W9Rz4FPePyXYqzPAKsk9XAFc4rfo8=";
+
+                    postBuild = ''
+                      cargo doc --no-deps --release
+                    '';
+
+                    postInstall = ''
+                      mkdir -p $out/doc
+                      cp -r target/doc $out/
+                    '';
+
+                    buildInputs = [
+                      nixfmt-rfc-style
+                      nix
+                    ];
+
+                    NIX_BIN_PATH = "${nix}/bin/nix";
 
                     meta = with lib; {
                       homepage = "https://github.com/tsandrini/flake-parts-builder";
@@ -130,35 +160,10 @@
                     };
                   };
               in
-              pkgs.callPackage package { inherit tsandrini; };
-
-            docs =
-              let
-                package =
-                  {
-                    lib,
-                    rustPlatform,
-                    builder,
-                  }:
-                  rustPlatform.buildRustPackage {
-                    inherit (builder) src unpackPhase version;
-                    name = "${builder.name}-docs";
-
-                    cargoSha256 = "sha256-Jsha+Aoe5R6g4H7KNX2VX62S+NGj1SrobeCakjgFw24=";
-
-                    doCheck = false;
-
-                    buildPhase = ''
-                      cargo doc --no-deps --release
-                    '';
-
-                    meta = builder.meta // {
-                      description = "Documentation for ${builder.meta.description}";
-                      mainProgram = null;
-                    };
-                  };
-              in
-              pkgs.callPackage package { inherit builder; };
+              pkgs.callPackage package {
+                inherit tsandrini;
+                nix = pkgs.nixVersions.stable;
+              };
 
             flake-parts =
               let
@@ -213,8 +218,8 @@
               pkgs.callPackage package { inherit tsandrini mkFlakeParts; };
           };
 
-          devShells = rec {
-            default = dev;
+          devShells = {
+            default = config.devShells.dev;
 
             dev =
               let

@@ -19,6 +19,9 @@ jobs:
 
       - name: "Setting up magic-nix-cache..."
         uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          extra-conf: |
+            accept-flake-config = true
 
       - name: "Settings up cachix binary cache..."
         uses: cachix/cachix-action@v15
@@ -29,9 +32,13 @@ jobs:
           # If you chose API tokens for write access OR if you have a private cache
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
+      # NOTE Install any necessary packages here
+      - name: "Setting up packages..."
+        run: |
+          nix profile install nixpkgs#nix-fast-build # parallel nix builder
+
       - name: "Building project packages..."
-        run: nix build
+        run: nix-fast-build --skip-cached --no-nom --flake ".#packages"
 
-      - name: "Building project devshells..."
-        run: nix develop --command echo OK
-
+      - name: "Building project devShells..."
+        run: nix-fast-build --skip-cached --no-nom --flake ".#devShells"

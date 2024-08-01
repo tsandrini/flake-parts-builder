@@ -11,7 +11,7 @@ use crate::config::{
     BASE_DERIVATION_NAME, BOOTSTRAP_DERIVATION_NAME, META_FILE, NAMEPLACEHOLDER, SELF_FLAKE_URI,
 };
 use crate::fs_utils::{regex_in_dir_recursive, reset_permissions};
-use crate::nix::nixfmt_file;
+use crate::nix::NixCmdInterface;
 use crate::parts::{FlakePartTuple, FlakePartsStore};
 use crate::templates::FlakeContext;
 
@@ -99,16 +99,6 @@ pub enum PartsTuplesParsingError {
     UnresolvedDependenciesError(Vec<String>),
 }
 
-// NOTE
-// 1. Load all FlakePartsStores
-// 2. Create an iterator over all parts (don't collect them yet)
-// 3. Construct a final vec of all parts that should be used
-//    a. First we parse the CLI parts
-//    b. Then we iterate over those to add potential dependencies
-//    c. Unique filter
-//    d. Combine these two
-// 4. We finally can create a vec of all parts that should be used
-// 5. Collect! (profit)
 pub fn parse_required_parts_tuples<'a>(
     cmd: &InitCommand,
     stores: &'a Vec<FlakePartsStore>,
@@ -125,8 +115,7 @@ pub fn parse_required_parts_tuples<'a>(
 
     let user_req_flake_strings = cmd.parts.clone();
 
-    // TODO remove
-    println!("User required parts: {:?}", user_req_flake_strings);
+    log::debug!("User requested parts: {:?}", user_req_flake_strings);
 
     let (resolved_deps, unresolved_deps) = {
         let start_indices: Vec<usize> = all_parts_tuples
@@ -155,8 +144,9 @@ pub fn parse_required_parts_tuples<'a>(
         .chain(resolved_deps.iter())
         .collect::<Vec<_>>();
 
-    // TODO remove
-    println!("All required parts: {:?}", all_req_flake_strings);
+    log::debug!("Resolved dependencies: {:?}", resolved_deps);
+    log::debug!("Unresolved dependencies: {:?}", unresolved_deps);
+    log::debug!("All required parts: {:?}", all_req_flake_strings);
 
     let final_parts_tuples = all_parts_tuples
         .into_iter()
@@ -168,29 +158,22 @@ pub fn parse_required_parts_tuples<'a>(
         })
         .collect::<Vec<_>>();
 
-    let final_parts_uris = final_parts_tuples
-        .iter()
-        .map(|flake_part| flake_part.to_flake_uri(None))
-        .collect::<Vec<_>>();
-
-    // TODO remove
-    println!("Final parts: {:?}", final_parts_uris);
-
     let missing_parts =
         FlakePartTuple::find_missing_parts_in(&final_parts_tuples, &user_req_flake_strings);
 
     if missing_parts.len() > 0 {
+        log::error!("Missing parts: {:?}", missing_parts);
         return Err(PartsTuplesParsingError::MissingPartsError(
             missing_parts.into_iter().cloned().collect::<Vec<_>>(),
         ));
     }
 
-    // TODO probably print that we are ignoring conflicts
     if !cmd.ignore_conflicts {
         // check_for_conflicts(&final_parts_tuples)?;
         let conflicts = FlakePartTuple::find_conflicting_parts_in(&final_parts_tuples);
 
         if conflicts.len() > 0 {
+            log::error!("Conflicting parts: {:?}", conflicts);
             return Err(PartsTuplesParsingError::ConflictingPartsError(
                 conflicts
                     .into_iter()
@@ -198,12 +181,15 @@ pub fn parse_required_parts_tuples<'a>(
                     .collect::<Vec<_>>(),
             ));
         }
+    } else {
+        log::warn!("Ignoring conflicts");
     }
 
     Ok(final_parts_tuples)
 }
 
 pub fn prepare_tmpdir(
+    nix_cmd: &impl NixCmdInterface,
     tmpdir: &TempDir,
     parts_tuples: &Vec<FlakePartTuple>,
     target_name: Option<&str>,
@@ -213,6 +199,10 @@ pub fn prepare_tmpdir(
     // TODO MERGE STRATEGY
     let tmp_path = tmpdir.path();
     for part_tuple in parts_tuples {
+        log::debug!(
+            "Copying the following part into tmpdir: {:?}",
+            part_tuple.part.name
+        );
         dir::copy(
             &part_tuple.part.nix_store_path,
             &tmp_path,
@@ -223,14 +213,15 @@ pub fn prepare_tmpdir(
         )?;
     }
 
-    // TODO fails if no META_FILE is present
-    // check if meta exists and delete it if yes
-
+    log::debug!("Removing meta file from tmpdir");
     std::fs::remove_file(tmp_path.join(META_FILE))?;
 
+    log::info!("Resetting permissions in tmpdir");
     reset_permissions(tmp_path.to_str().unwrap())?;
 
     if render_flake_nix {
+        log::info!("Rendering `flake.nix.template` in tmpdir");
+
         let metadata = parts_tuples
             .iter()
             .map(|part_tuple| &part_tuple.part.metadata)
@@ -240,28 +231,40 @@ pub fn prepare_tmpdir(
 
         let rendered = flake_context.render()?;
         fs::write(tmp_path.join("flake.nix"), rendered)?;
-        nixfmt_file(&tmp_path.join("flake.nix"))?;
+        log::info!("Running nixfmt on flake.nix in tmpdir");
+        nix_cmd.nixfmt_file(&tmp_path.join("flake.nix"))?;
+        // nixfmt_file(&tmp_path.join("flake.nix"))?;
+    } else {
+        log::info!("Skipping rendering of `flake.nix.template`");
     }
 
     // This becomes None when `.`, `../`,etc... is passed
     if let Some(name) = target_name {
+        log::info!(
+            "Globally replacing NAMEPLACEHOLDER in tmpdir to name: {}",
+            name
+        );
         regex_in_dir_recursive(tmp_path.to_str().unwrap(), &NAMEPLACEHOLDER, name)?;
     }
 
     Ok(())
 }
 
-pub fn init(mut cmd: InitCommand) -> Result<()> {
+pub fn init(mut cmd: InitCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
     if !cmd.shared_args.disable_base_parts {
+        log::info!("Adding base parts store to `cmd.shared_args.parts_stores`");
+
         cmd.shared_args
             .parts_stores
             .push(format!("{}#{}", SELF_FLAKE_URI, BASE_DERIVATION_NAME));
     }
 
-    // NOTE this one is required even if you disable base store parts
+    log::info!("Adding bootstrap parts store to `cmd.shared_args.parts_stores`");
     cmd.shared_args
         .parts_stores
         .push(format!("{}#{}", SELF_FLAKE_URI, BOOTSTRAP_DERIVATION_NAME));
+
+    log::info!("Adding _bootstrap to required `cmd.parts`");
     cmd.parts.push(format!(
         "{}#{}/_bootstrap",
         SELF_FLAKE_URI, BOOTSTRAP_DERIVATION_NAME
@@ -272,20 +275,39 @@ pub fn init(mut cmd: InitCommand) -> Result<()> {
         .shared_args
         .parts_stores
         .iter()
-        .map(|store| FlakePartsStore::from_flake_uri(&store))
+        .map(|store| FlakePartsStore::from_flake_uri(&store, &nix_cmd))
         .collect::<Result<Vec<_>>>()?;
+
+    log::debug!(
+        "All parts stores: {:?}",
+        stores
+            .iter()
+            .map(|store| store.flake_uri.clone())
+            .collect::<Vec<_>>()
+    );
 
     let parts_tuples = parse_required_parts_tuples(&cmd, &stores)?;
 
     let path = cmd.path.canonicalize().unwrap_or_else(|_| cmd.path.clone());
+    log::debug!("Full user provided path: {:?}", path);
 
     if !path.exists() {
+        log::info!("Provided path doesn't exist, creating it");
         dir::create_all(&path, false)?;
     }
 
     let tmpdir = tempdir()?;
-    prepare_tmpdir(&tmpdir, &parts_tuples, path.to_str(), &cmd.strategy, true)?;
+    log::info!("Preparing new project in a tmpdir at {:?}", tmpdir.path());
+    prepare_tmpdir(
+        &nix_cmd,
+        &tmpdir,
+        &parts_tuples,
+        path.file_name().map(|osstr| osstr.to_str().unwrap()),
+        &cmd.strategy,
+        true,
+    )?;
 
+    log::info!("Project successfully prepared in tmpdir, now copying to target directory");
     dir::copy(
         &tmpdir,
         &cmd.path,

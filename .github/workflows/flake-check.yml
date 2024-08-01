@@ -20,12 +20,23 @@ jobs:
 
       - name: "Installing and configuring the nix package manager..."
         uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            accept-flake-config = true
 
       - name: "Setting up magic-nix-cache..."
         uses: DeterminateSystems/magic-nix-cache-action@main
 
+      # NOTE Install any necessary packages here
+      - name: "Setting up packages..."
+        run: |
+          nix profile install nixpkgs#nix-fast-build # parallel nix builder
+
       - name: "Running `nix flake check`..."
-        run: nix flake check --show-trace --accept-flake-config
+        run: nix-fast-build --skip-cached --no-nom
+
+      - name: "Running `nix build ...`..."
+        run: nix-fast-build --skip-cached --no-nom --flake ".#packages"
 
       - name: "Checking flake inputs for stale & insecure nixpkgs versions..."
         uses: DeterminateSystems/flake-checker-action@main
