@@ -20,7 +20,7 @@ pub trait NixCmdInterface {
     type Error: From<NixCmdInterfaceError> + std::error::Error + Send + Sync + 'static;
 
     fn eval_nix_file(&self, path: &PathBuf, to_json: bool) -> Result<String, Self::Error>;
-    fn store_path_of_flake(&self, flake_uri: &str) -> Result<PathBuf, Self::Error>; // TODO maybe rename
+    fn store_path_of_flake(&self, flake_uri: &str) -> Result<PathBuf, Self::Error>;
     fn nixfmt_file(&self, path: &PathBuf) -> Result<(), Self::Error>;
 }
 

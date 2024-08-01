@@ -274,3 +274,15 @@ you can clearly **"see"** that this isn't a good candidate for a `flakeModule`,
 they are too specific, they typically represent the end user options of some
 existing `flakeModule`s. Wrapping this code into another layer of modularity
 doesn't make sense, since this is meant to be a piece of configuration code.
+
+### Help! I'm experiencing an XYZ bug!
+
+I'm sorry for the inconvenience, please run whatever is producing said bug
+with these `RUST_LOG=debug RUST_BACKTRACE=full` environment variables, 
+for example
+
+``` bash
+RUST_LOG=debug RUST_BACKTRACE=full flake-parts-builder add shells ./myProject
+```
+
+and paste the output into a new bug issue. Thanks! :heart:

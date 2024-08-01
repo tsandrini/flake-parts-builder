@@ -17,12 +17,14 @@ pub struct ListCommand {
 
 pub fn list(mut cmd: ListCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
     if !cmd.shared_args.disable_base_parts {
+        log::info!("Adding base parts store to `cmd.shared_args.parts_stores`");
         cmd.shared_args
             .parts_stores
             .push(format!("{}#{}", SELF_FLAKE_URI, BASE_DERIVATION_NAME));
     }
 
     // NOTE this one is required even if you disable base store parts
+    log::info!("Adding bootstrap parts store to `cmd.shared_args.parts_stores`");
     cmd.shared_args
         .parts_stores
         .push(format!("{}#{}", SELF_FLAKE_URI, BOOTSTRAP_DERIVATION_NAME));

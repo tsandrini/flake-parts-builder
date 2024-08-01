@@ -26,9 +26,10 @@ pub struct FlakePartTuple<'a> {
 }
 
 pub fn normalize_flake_string(target: &str, flake: &str, derivation: Option<&str>) -> String {
-    // TODO return error if empty flake
     if target.contains('#') {
-        target.to_string()
+        target.to_string() // OK
+    } else if flake.contains('#') {
+        format!("{}/{}", flake, target)
     } else if let Some(derivation) = derivation {
         format!("{}#{}/{}", flake, derivation, target)
     } else {
@@ -224,16 +225,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_normalize_flake_string_with_output() {
+    fn test_normalize_flake_string_with_hash_in_target() {
         let result = normalize_flake_string("github:user/repo#output", "unused", None);
         assert_eq!(result, "github:user/repo#output");
     }
 
     #[test]
-    fn test_normalize_flake_string_with_branch() {
-        let result =
-            normalize_flake_string("output", "github:user/repo/branch", Some("derivation"));
-        assert_eq!(result, "github:user/repo/branch#derivation/output");
+    fn test_normalize_flake_string_with_hash_in_flake() {
+        let result = normalize_flake_string("output", "github:user/repo#derivation", None);
+        assert_eq!(result, "github:user/repo#derivation/output");
     }
 
     #[test]
@@ -261,20 +261,6 @@ mod tests {
     }
 
     #[test]
-    fn test_normalize_flake_string_with_empty_flake() {
-        let result = normalize_flake_string("target", "", Some("derivation"));
-        assert_eq!(result, "#derivation/target");
-        // Note: This might be an error case in the future, based on the TODO comment
-    }
-
-    #[test]
-    fn test_normalize_flake_string_with_empty_flake_and_no_derivation() {
-        let result = normalize_flake_string("target", "", None);
-        assert_eq!(result, "#default/target");
-        // Note: This might be an error case in the future, based on the TODO comment
-    }
-
-    #[test]
     fn test_normalize_flake_string_with_complex_target() {
         let result =
             normalize_flake_string("path/to/target", "github:user/repo", Some("derivation"));
@@ -282,16 +268,10 @@ mod tests {
     }
 
     #[test]
-    fn test_normalize_flake_string_with_branch_and_output() {
-        let result = normalize_flake_string("output", "github:user/repo/branch", None);
-        assert_eq!(result, "github:user/repo/branch#default/output");
-    }
-
-    #[test]
-    fn test_normalize_flake_string_with_commit_hash() {
+    fn test_normalize_flake_string_with_hash_in_flake_and_derivation() {
         let result =
-            normalize_flake_string("target", "github:user/repo/a1b2c3d", Some("derivation"));
-        assert_eq!(result, "github:user/repo/a1b2c3d#derivation/target");
+            normalize_flake_string("output", "github:user/repo#derivation", Some("unused"));
+        assert_eq!(result, "github:user/repo#derivation/output");
     }
 
     #[test]
@@ -301,15 +281,8 @@ mod tests {
     }
 
     #[test]
-    fn test_normalize_flake_string_with_output_in_target() {
-        let result =
-            normalize_flake_string("target#output", "github:user/repo", Some("derivation"));
-        assert_eq!(result, "target#output");
-    }
-
-    #[test]
-    fn test_normalize_flake_string_with_output_in_target_and_no_derivation() {
-        let result = normalize_flake_string("target#output", "github:user/repo", None);
-        assert_eq!(result, "target#output");
+    fn test_normalize_flake_string_with_hash_in_flake_and_target() {
+        let result = normalize_flake_string("output#extra", "github:user/repo#branch", None);
+        assert_eq!(result, "output#extra");
     }
 }

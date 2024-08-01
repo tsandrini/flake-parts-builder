@@ -29,6 +29,8 @@ pub struct AddCommand {
 
 pub fn add(mut cmd: AddCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
     if !cmd.init.shared_args.disable_base_parts {
+        log::info!("Adding base parts store to `cmd.shared_args.parts_stores`");
+
         cmd.init
             .shared_args
             .parts_stores
@@ -44,6 +46,14 @@ pub fn add(mut cmd: AddCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
         .map(|store| FlakePartsStore::from_flake_uri(&store, &nix_cmd))
         .collect::<Result<Vec<_>>>()?;
 
+    log::debug!(
+        "All parts stores: {:?}",
+        stores
+            .iter()
+            .map(|store| store.flake_uri.clone())
+            .collect::<Vec<_>>()
+    );
+
     let parts_tuples = parse_required_parts_tuples(&cmd.init, &stores)?;
 
     let path = cmd
@@ -52,17 +62,22 @@ pub fn add(mut cmd: AddCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
         .canonicalize()
         .unwrap_or_else(|_| cmd.init.path.clone());
 
-    // TODO probably yield an error instead
+    log::debug!("Full user provided path: {:?}", path);
+
     if !path.exists() {
-        dir::create_all(&path, false)?;
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            format!("Path {:?} does not exist", path),
+        ))?;
     }
 
     let tmpdir = tempdir()?;
+    log::info!("Preparing new additions in a tmpdir at {:?}", tmpdir.path());
     prepare_tmpdir(
         &nix_cmd,
         &tmpdir,
         &parts_tuples,
-        path.to_str(),
+        path.file_name().map(|osstr| osstr.to_str().unwrap()),
         &cmd.init.strategy,
         false,
     )?;
@@ -70,6 +85,7 @@ pub fn add(mut cmd: AddCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
     // NOTE the flake.nix file shouldn't be present due to the strucutre of
     // flake-parts, but I am way tooo paranoid.
     if tmpdir.path().join("flake.nix").exists() {
+        log::warn!("Unexpected flake.nix file found in tmpdir, removing it.");
         std::fs::remove_file(tmpdir.path().join("flake.nix"))?;
     }
 
@@ -78,12 +94,14 @@ pub fn add(mut cmd: AddCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
         .map(|part_tuple| &part_tuple.part.metadata)
         .collect::<Vec<_>>();
 
+    log::info!("Rendering `flake-inputs.nix.template` inputs");
     let flake_context = FlakeInputsContext::from_merged_metadata(&metadata);
 
     let rendered = flake_context.render()?;
     println!("Please add the following snippet to your `flake.nix` inputs:");
     println!("{}", rendered);
 
+    log::info!("Addition succesfully prepared in tmpdir, now copying to target directory");
     dir::copy(
         &tmpdir,
         &cmd.init.path,
