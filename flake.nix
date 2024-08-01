@@ -25,7 +25,7 @@
         let
           finalArgs = {
             name = "flake-parts";
-            version = "0.2.0";
+            version = "1.0.0-b1";
 
             dontConfigure = true;
             dontBuild = true;
@@ -97,7 +97,7 @@
                   }:
                   rustPlatform.buildRustPackage {
                     name = "flake-parts-builder";
-                    version = "0.2.0";
+                    version = "1.0.0-b1";
 
                     src = [
                       ./src
@@ -177,7 +177,7 @@
                   mkFlakeParts {
                     inherit stdenv;
                     name = "flake-parts";
-                    version = "0.2.0";
+                    version = "1.0.0-b1";
                     src = ./flake-parts;
 
                     meta = with lib; {
@@ -203,7 +203,7 @@
                   mkFlakeParts {
                     inherit stdenv;
                     name = "flake-parts-bootstrap";
-                    version = "0.2.0";
+                    version = "1.0.0-b1";
                     src = ./flake-parts-bootstrap;
 
                     meta = with lib; {
