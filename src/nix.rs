@@ -164,20 +164,26 @@ mod tests {
     mod mock_tests {
         use crate::nix::{NixCmdInterface, NixCmdInterfaceError};
         use std::collections::HashMap;
+        use std::fs::File;
+        use std::io::Write;
         use std::path::{Path, PathBuf};
+        use std::thread::sleep;
+        use std::time::Duration;
+        use std::time::SystemTime;
+        use tempfile::{tempdir, TempDir};
 
         pub struct MockExecutor {
             eval_results: HashMap<PathBuf, Result<String, NixCmdInterfaceError>>,
-            store_paths: HashMap<String, Result<PathBuf, NixCmdInterfaceError>>,
-            nixfmt_results: HashMap<PathBuf, Result<(), NixCmdInterfaceError>>,
+            mocked_store: TempDir,
+            store_paths: HashMap<String, PathBuf>,
         }
 
         impl MockExecutor {
             pub fn new() -> Self {
                 Self {
                     eval_results: HashMap::new(),
+                    mocked_store: tempdir().expect("Failed to create temporary directory"),
                     store_paths: HashMap::new(),
-                    nixfmt_results: HashMap::new(),
                 }
             }
 
@@ -193,18 +199,15 @@ mod tests {
             pub fn mock_store_path(
                 &mut self,
                 flake_uri: String,
-                result: Result<PathBuf, NixCmdInterfaceError>,
-            ) {
-                self.store_paths.insert(flake_uri, result);
-            }
-
-            pub fn mock_nixfmt<P: AsRef<Path>>(
-                &mut self,
-                path: P,
-                result: Result<(), NixCmdInterfaceError>,
-            ) {
-                self.nixfmt_results
-                    .insert(path.as_ref().to_path_buf(), result);
+            ) -> Result<PathBuf, NixCmdInterfaceError> {
+                let mock_path = self
+                    .mocked_store
+                    .path()
+                    .join(format!("mock-{}", flake_uri.replace(':', "-")));
+                std::fs::create_dir_all(&mock_path)
+                    .map_err(|e| NixCmdInterfaceError::NixCommandError(e.to_string()))?;
+                self.store_paths.insert(flake_uri, mock_path.clone());
+                Ok(mock_path)
             }
         }
 
@@ -219,133 +222,230 @@ mod tests {
             }
 
             fn store_path_of_flake(&self, flake_uri: &str) -> Result<PathBuf, Self::Error> {
-                self.store_paths.get(flake_uri).cloned().unwrap_or(Err(
+                self.store_paths.get(flake_uri).cloned().ok_or_else(|| {
                     NixCmdInterfaceError::NixCommandError(format!(
                         "Flake URI not mocked: {}",
                         flake_uri
-                    )),
-                ))
+                    ))
+                })
             }
 
             fn nixfmt_file(&self, path: &PathBuf) -> Result<(), Self::Error> {
-                self.nixfmt_results
-                    .get(path)
-                    .cloned()
-                    .unwrap_or(Err(NixCmdInterfaceError::InvalidPath(path.clone())))
+                if path.exists() {
+                    // Touch the file by updating its modification time
+                    File::open(path)
+                        .and_then(|file| file.set_modified(SystemTime::now()))
+                        .map_err(|e| NixCmdInterfaceError::NixCommandError(e.to_string()))
+                } else {
+                    Err(NixCmdInterfaceError::InvalidPath(path.clone()))
+                }
             }
         }
-        #[cfg(test)]
-        mod tests {
-            use super::*;
-            use std::path::PathBuf;
 
-            #[test]
-            fn test_mock_eval_nix_file_valid() {
-                let mut mock = MockExecutor::new();
-                let path = PathBuf::from("/test/valid.nix");
-                let expected_output = r#"{"description":"Test description","inputs":{"test":{"url":"github:test/repo"}}}"#.to_string();
+        #[test]
+        fn test_mock_eval_nix_file_valid() {
+            let mut mock = MockExecutor::new();
+            let path = PathBuf::from("/test/valid.nix");
+            let expected_output = r#"{"description":"Test description","inputs":{"test":{"url":"github:test/repo"}}}"#.to_string();
 
-                mock.mock_eval(&path, Ok(expected_output.clone()));
+            mock.mock_eval(&path, Ok(expected_output.clone()));
 
-                let result = mock.eval_nix_file(&path, true).unwrap();
-                assert_eq!(result, expected_output);
-            }
+            let result = mock.eval_nix_file(&path, true).unwrap();
+            assert_eq!(result, expected_output);
+        }
 
-            #[test]
-            fn test_mock_eval_nix_file_error() {
-                let mut mock = MockExecutor::new();
-                let path = PathBuf::from("/test/error.nix");
-                let error_message = "Nix evaluation error".to_string();
+        #[test]
+        fn test_mock_eval_nix_file_error() {
+            let mut mock = MockExecutor::new();
+            let path = PathBuf::from("/test/error.nix");
+            let error_message = "Nix evaluation error".to_string();
 
-                mock.mock_eval(
-                    &path,
-                    Err(NixCmdInterfaceError::NixCommandError(error_message.clone())),
-                );
+            mock.mock_eval(
+                &path,
+                Err(NixCmdInterfaceError::NixCommandError(error_message.clone())),
+            );
 
-                let result = mock.eval_nix_file(&path, true);
-                assert!(
-                    matches!(result, Err(NixCmdInterfaceError::NixCommandError(msg)) if msg == error_message)
-                );
-            }
+            let result = mock.eval_nix_file(&path, true);
+            assert!(
+                matches!(result, Err(NixCmdInterfaceError::NixCommandError(msg)) if msg == error_message)
+            );
+        }
 
-            #[test]
-            fn test_mock_eval_nix_file_utf8_error() {
-                let mut mock = MockExecutor::new();
-                let path = PathBuf::from("/test/utf8_error.nix");
-                let error_message = "UTF-8 conversion error".to_string();
+        #[test]
+        fn test_mock_eval_nix_file_utf8_error() {
+            let mut mock = MockExecutor::new();
+            let path = PathBuf::from("/test/utf8_error.nix");
+            let error_message = "UTF-8 conversion error".to_string();
 
-                mock.mock_eval(
-                    &path,
-                    Err(NixCmdInterfaceError::UTF8ConversionError(
-                        error_message.clone(),
-                    )),
-                );
+            mock.mock_eval(
+                &path,
+                Err(NixCmdInterfaceError::UTF8ConversionError(
+                    error_message.clone(),
+                )),
+            );
 
-                let result = mock.eval_nix_file(&path, true);
-                assert!(
-                    matches!(result, Err(NixCmdInterfaceError::UTF8ConversionError(msg)) if msg == error_message)
-                );
-            }
+            let result = mock.eval_nix_file(&path, true);
+            assert!(
+                matches!(result, Err(NixCmdInterfaceError::UTF8ConversionError(msg)) if msg == error_message)
+            );
+        }
 
-            #[test]
-            fn test_mock_eval_nix_file_not_mocked() {
-                let mock = MockExecutor::new();
-                let path = PathBuf::from("/test/not_mocked.nix");
+        #[test]
+        fn test_mock_eval_nix_file_not_mocked() {
+            let mock = MockExecutor::new();
+            let path = PathBuf::from("/test/not_mocked.nix");
 
-                let result = mock.eval_nix_file(&path, true);
-                assert!(matches!(result, Err(NixCmdInterfaceError::InvalidPath(p)) if p == path));
-            }
+            let result = mock.eval_nix_file(&path, true);
+            assert!(matches!(result, Err(NixCmdInterfaceError::InvalidPath(p)) if p == path));
+        }
 
-            #[test]
-            fn test_mock_eval_nix_file_multiple_calls() {
-                let mut mock = MockExecutor::new();
-                let path = PathBuf::from("/test/multiple_calls.nix");
-                let expected_output = "Test output".to_string();
+        #[test]
+        fn test_mock_eval_nix_file_multiple_calls() {
+            let mut mock = MockExecutor::new();
+            let path = PathBuf::from("/test/multiple_calls.nix");
+            let expected_output = "Test output".to_string();
 
-                mock.mock_eval(&path, Ok(expected_output.clone()));
+            mock.mock_eval(&path, Ok(expected_output.clone()));
 
-                // First call should succeed
-                let result1 = mock.eval_nix_file(&path, true).unwrap();
-                assert_eq!(result1, expected_output);
+            // First call should succeed
+            let result1 = mock.eval_nix_file(&path, true).unwrap();
+            assert_eq!(result1, expected_output);
 
-                // Second call should also succeed with the same result
-                let result2 = mock.eval_nix_file(&path, true).unwrap();
-                assert_eq!(result2, expected_output);
-            }
+            // Second call should also succeed with the same result
+            let result2 = mock.eval_nix_file(&path, true).unwrap();
+            assert_eq!(result2, expected_output);
+        }
 
-            #[test]
-            fn test_mock_eval_nix_file_different_paths() {
-                let mut mock = MockExecutor::new();
-                let path1 = PathBuf::from("/test/path1.nix");
-                let path2 = PathBuf::from("/test/path2.nix");
-                let output1 = "Output 1".to_string();
-                let output2 = "Output 2".to_string();
+        #[test]
+        fn test_mock_eval_nix_file_different_paths() {
+            let mut mock = MockExecutor::new();
+            let path1 = PathBuf::from("/test/path1.nix");
+            let path2 = PathBuf::from("/test/path2.nix");
+            let output1 = "Output 1".to_string();
+            let output2 = "Output 2".to_string();
 
-                mock.mock_eval(&path1, Ok(output1.clone()));
-                mock.mock_eval(&path2, Ok(output2.clone()));
+            mock.mock_eval(&path1, Ok(output1.clone()));
+            mock.mock_eval(&path2, Ok(output2.clone()));
 
-                let result1 = mock.eval_nix_file(&path1, true).unwrap();
-                let result2 = mock.eval_nix_file(&path2, true).unwrap();
+            let result1 = mock.eval_nix_file(&path1, true).unwrap();
+            let result2 = mock.eval_nix_file(&path2, true).unwrap();
 
-                assert_eq!(result1, output1);
-                assert_eq!(result2, output2);
-            }
+            assert_eq!(result1, output1);
+            assert_eq!(result2, output2);
+        }
 
-            #[test]
-            fn test_mock_eval_nix_file_to_json_ignored() {
-                let mut mock = MockExecutor::new();
-                let path = PathBuf::from("/test/json_ignored.nix");
-                let expected_output = r#"{"key": "value"}"#.to_string();
+        #[test]
+        fn test_mock_eval_nix_file_to_json_ignored() {
+            let mut mock = MockExecutor::new();
+            let path = PathBuf::from("/test/json_ignored.nix");
+            let expected_output = r#"{"key": "value"}"#.to_string();
 
-                mock.mock_eval(&path, Ok(expected_output.clone()));
+            mock.mock_eval(&path, Ok(expected_output.clone()));
 
-                // The to_json parameter should be ignored in the mock
-                let result_true = mock.eval_nix_file(&path, true).unwrap();
-                let result_false = mock.eval_nix_file(&path, false).unwrap();
+            // The to_json parameter should be ignored in the mock
+            let result_true = mock.eval_nix_file(&path, true).unwrap();
+            let result_false = mock.eval_nix_file(&path, false).unwrap();
 
-                assert_eq!(result_true, expected_output);
-                assert_eq!(result_false, expected_output);
-            }
+            assert_eq!(result_true, expected_output);
+            assert_eq!(result_false, expected_output);
+        }
+
+        #[test]
+        fn test_mock_store_path_of_flake_valid() {
+            let mut mock = MockExecutor::new();
+            let flake_uri = "github:user/repo";
+            let mock_path = mock.mock_store_path(flake_uri.to_string()).unwrap();
+
+            let result = mock.store_path_of_flake(flake_uri).unwrap();
+            assert_eq!(result, mock_path);
+            assert!(result.exists());
+            assert!(result.is_dir());
+        }
+
+        #[test]
+        fn test_mock_store_path_of_flake_not_mocked() {
+            let mock = MockExecutor::new();
+            let flake_uri = "github:user/not-mocked-repo";
+
+            let result = mock.store_path_of_flake(flake_uri);
+            assert!(matches!(
+                result,
+                Err(NixCmdInterfaceError::NixCommandError(_))
+            ));
+        }
+
+        #[test]
+        fn test_mock_store_path_of_flake_multiple_flakes() {
+            let mut mock = MockExecutor::new();
+            let flake_uri1 = "github:user/repo1";
+            let flake_uri2 = "github:user/repo2";
+            let mock_path1 = mock.mock_store_path(flake_uri1.to_string()).unwrap();
+            let mock_path2 = mock.mock_store_path(flake_uri2.to_string()).unwrap();
+
+            let result1 = mock.store_path_of_flake(flake_uri1).unwrap();
+            let result2 = mock.store_path_of_flake(flake_uri2).unwrap();
+
+            assert_eq!(result1, mock_path1);
+            assert_eq!(result2, mock_path2);
+            assert_ne!(result1, result2);
+        }
+
+        #[test]
+        fn test_mock_store_path_of_flake_overwrite() {
+            let mut mock = MockExecutor::new();
+            let flake_uri = "github:user/repo";
+            let mock_path1 = mock.mock_store_path(flake_uri.to_string()).unwrap();
+            let mock_path2 = mock.mock_store_path(flake_uri.to_string()).unwrap();
+
+            assert_eq!(mock_path1, mock_path2);
+
+            let result = mock.store_path_of_flake(flake_uri).unwrap();
+            assert_eq!(result, mock_path2);
+        }
+
+        #[test]
+        fn test_mock_store_path_of_flake_different_uris() {
+            let mut mock = MockExecutor::new();
+            let flake_uri1 = "github:user/repo";
+            let flake_uri2 = "gitlab:user/repo";
+            let mock_path1 = mock.mock_store_path(flake_uri1.to_string()).unwrap();
+            let mock_path2 = mock.mock_store_path(flake_uri2.to_string()).unwrap();
+
+            let result1 = mock.store_path_of_flake(flake_uri1).unwrap();
+            let result2 = mock.store_path_of_flake(flake_uri2).unwrap();
+
+            assert_ne!(result1, result2);
+            assert_eq!(result1, mock_path1);
+            assert_eq!(result2, mock_path2);
+        }
+
+        #[test]
+        fn test_mock_nixfmt_file_success() {
+            let mock = MockExecutor::new();
+            let temp_dir = tempdir().unwrap();
+            let file_path = temp_dir.path().join("test.nix");
+            File::create(&file_path)
+                .unwrap()
+                .write_all(b"# Test Nix file")
+                .unwrap();
+
+            let original_modified = file_path.metadata().unwrap().modified().unwrap();
+            sleep(Duration::from_secs(1)); // Ensure some time passes
+
+            let result = mock.nixfmt_file(&file_path);
+            assert!(result.is_ok());
+
+            let new_modified = file_path.metadata().unwrap().modified().unwrap();
+            assert!(new_modified > original_modified);
+        }
+
+        #[test]
+        fn test_mock_nixfmt_file_not_exist() {
+            let mock = MockExecutor::new();
+            let non_existent_path = PathBuf::from("/path/to/non/existent/file.nix");
+
+            let result = mock.nixfmt_file(&non_existent_path);
+            assert!(matches!(result, Err(NixCmdInterfaceError::InvalidPath(_))));
         }
     }
 
