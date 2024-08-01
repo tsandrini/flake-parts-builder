@@ -4,10 +4,10 @@
   imports = with inputs; [ process-compose-flake.flakeModule ];
 
   perSystem =
-    { pkgs, ... }:
+    { config, pkgs, ... }:
     {
-      process-compose = rec {
-        default = dev-process;
+      process-compose = {
+        default = config.process-compose.dev-process;
 
         dev-process = import ./dev.nix { inherit pkgs lib; };
       };

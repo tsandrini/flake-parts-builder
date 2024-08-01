@@ -25,7 +25,7 @@
         let
           finalArgs = {
             name = "flake-parts";
-            version = "1.0.0";
+            version = "1.0.0-b1";
 
             dontConfigure = true;
             dontBuild = true;
@@ -97,7 +97,7 @@
                   }:
                   rustPlatform.buildRustPackage {
                     name = "flake-parts-builder";
-                    version = "1.0.0";
+                    version = "1.0.0-b1";
 
                     src = [
                       ./src
@@ -132,7 +132,7 @@
                       export HOME=$TMPDIR/home
                     '';
 
-                    cargoSha256 = "sha256-vMnU9PVZz61Tp/W9Rz4FPePyXYqzPAKsk9XAFc4rfo8=";
+                    cargoSha256 = "sha256-Rhc9Zxf8YMXRsxQJzcRfRhe02hcQ3XrxyDzcaYBpy0E=";
 
                     postBuild = ''
                       cargo doc --no-deps --release
@@ -177,7 +177,7 @@
                   mkFlakeParts {
                     inherit stdenv;
                     name = "flake-parts";
-                    version = "1.0.0";
+                    version = "1.0.0-b1";
                     src = ./flake-parts;
 
                     meta = with lib; {
@@ -203,7 +203,7 @@
                   mkFlakeParts {
                     inherit stdenv;
                     name = "flake-parts-bootstrap";
-                    version = "1.0.0";
+                    version = "1.0.0-b1";
                     src = ./flake-parts-bootstrap;
 
                     meta = with lib; {

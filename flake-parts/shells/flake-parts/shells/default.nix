@@ -4,8 +4,8 @@
   perSystem =
     { pkgs, config, ... }:
     {
-      devShells = rec {
-        default = dev;
+      devShells = {
+        default = config.devShells.dev;
 
         dev = pkgs.callPackage ./dev.nix {
           inherit lib;
