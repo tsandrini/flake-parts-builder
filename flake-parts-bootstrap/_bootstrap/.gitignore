@@ -10,6 +10,7 @@ result-*
 ## devshells/devenv/direnv
 .direnv
 .devenv
+.pre-commit-config.yaml
 
 # -----------
 # Editors/IDE
