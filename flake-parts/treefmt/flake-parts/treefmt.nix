@@ -1,5 +1,5 @@
 # --- flake-parts/treefmt.nix
-{ config, inputs, ... }:
+{ inputs, ... }:
 {
   imports = with inputs; [ treefmt-nix.flakeModule ];
 
@@ -17,7 +17,7 @@
         package = pkgs.treefmt;
         flakeCheck = true;
         flakeFormatter = true;
-        projectRootFile = config.flake-root + "/flake.nix";
+        projectRootFile = "flake.nix";
 
         programs = {
           deadnix.enable = true; # Find and remove unused code in .nix source files
