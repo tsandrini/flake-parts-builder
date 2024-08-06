@@ -7,7 +7,7 @@ repository = "https://github.com/tsandrini/flake-parts-builder"
 license = "MIT"
 
 [dependencies]
-clap = { version = "4.5.7", features = ["cargo", "derive"] }
+clap = { version = "4.5.13", features = ["cargo", "derive"] }
 color-eyre = "0.6.3"
 diff = "0.1.13"
 env_logger = "0.11.5"
