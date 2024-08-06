@@ -16,12 +16,12 @@ jobs:
 
       - name: "Installing and configuring the nix package manager..."
         uses: DeterminateSystems/nix-installer-action@main
-
-      - name: "Setting up magic-nix-cache..."
-        uses: DeterminateSystems/magic-nix-cache-action@main
         with:
           extra-conf: |
             accept-flake-config = true
+
+      - name: "Setting up magic-nix-cache..."
+        uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: "Settings up cachix binary cache..."
         uses: cachix/cachix-action@v15
@@ -39,6 +39,10 @@ jobs:
 
       - name: "Building project packages..."
         run: nix-fast-build --skip-cached --no-nom --flake ".#packages"
+        # NOTE: You can also limit the build only to the currentSystem if needed
+        # run: nix-fast-build --skip-cached --no-nom --flake ".#packages.$(nix eval --raw --impure --expr builtins.currentSystem)"
 
       - name: "Building project devShells..."
         run: nix-fast-build --skip-cached --no-nom --flake ".#devShells"
+        # NOTE: You can also limit the build only to the currentSystem if needed
+        # run: nix-fast-build --skip-cached --no-nom --flake ".#devShells.$(nix eval --raw --impure --expr builtins.currentSystem)"

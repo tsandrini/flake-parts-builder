@@ -34,6 +34,18 @@ jobs:
 
       - name: "Running `nix flake check`..."
         run: nix-fast-build --skip-cached --no-nom
+        # NOTE: You can also limit the build only to the currentSystem if needed
+        # run: nix-fast-build --skip-cached --no-nom --flake ".#checks.$(nix eval --raw --impure --expr builtins.currentSystem)"
+
+      - name: "Running `nix build ...`..."
+        run: nix-fast-build --skip-cached --no-nom --flake ".#packages"
+        # NOTE: You can also limit the build only to the currentSystem if needed
+        # run: nix-fast-build --skip-cached --no-nom --flake ".#packages.$(nix eval --raw --impure --expr builtins.currentSystem)"
+
+      - name: "Running `nix develop...`..."
+        run: nix-fast-build --skip-cached --no-nom --flake ".#devShells"
+        # NOTE: You can also limit the build only to the currentSystem if needed
+        # run: nix-fast-build --skip-cached --no-nom --flake ".#devShells.$(nix eval --raw --impure --expr builtins.currentSystem)"
 
       - name: "Checking flake inputs for stale & insecure nixpkgs versions..."
         uses: DeterminateSystems/flake-checker-action@main
