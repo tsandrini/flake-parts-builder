@@ -20,7 +20,9 @@
         projectRootFile = "flake.nix";
 
         settings = {
-          global.excludes = [ "*.age" ];
+          global.excludes = [
+            "*.age" # Age encrypted files
+          ];
           shellcheck.includes = [
             "*.sh"
             ".envrc"
