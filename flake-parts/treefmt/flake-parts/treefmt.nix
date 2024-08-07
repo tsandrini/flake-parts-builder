@@ -19,18 +19,32 @@
         flakeFormatter = true;
         projectRootFile = "flake.nix";
 
+        settings = {
+          global.excludes = [
+            "*.age" # Age encrypted files
+          ];
+          shellcheck.includes = [
+            "*.sh"
+            ".envrc"
+          ];
+          prettier.editorconfig = true;
+        };
+
         programs = {
           deadnix.enable = true; # Find and remove unused code in .nix source files
           statix.enable = true; # Lints and suggestions for the nix programming language
-          nixfmt-rfc-style.enable = true; # An opinionated formatter for Nix
-          # NOTE Choose a different formatter if you'd like to
-          # nixfmt.enable = true; # An opinionated formatter for Nix
-          # alejandra.enable = true; # The Uncompromising Nix Code Formatter
+          nixfmt.enable = true; # An opinionated formatter for Nix
 
-          # prettier.enable = true; # Prettier is an opinionated code formatter
+          prettier.enable = true; # Prettier is an opinionated code formatter
+          yamlfmt.enable = true; # An extensible command line tool or library to format yaml files.
+          jsonfmt.enable = true; # Formatter for JSON files
           # mdformat.enable = true; # CommonMark compliant Markdown formatter
-          # yamlfmt.enable = true; # An extensible command line tool or library to format yaml files.
-          # jsonfmt.enable = true; # Formatter for JSON files
+
+          # shellcheck.enable = true; # Shell script analysis tool
+          # shfmt.enable = true; # Shell parser and formatter
+
+          # actionlint.enable = true; # Static checker for GitHub Actions workflow files
+          # mdsh.enable = true; # Markdown shell pre-processor
         };
       };
     };
