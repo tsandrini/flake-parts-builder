@@ -43,7 +43,7 @@ pub fn add(mut cmd: AddCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
         .shared_args
         .parts_stores
         .iter()
-        .map(|store| FlakePartsStore::from_flake_uri(&store, &nix_cmd))
+        .map(|store| FlakePartsStore::from_flake_uri(store, &nix_cmd))
         .collect::<Result<Vec<_>>>()?;
 
     log::debug!(
@@ -65,10 +65,10 @@ pub fn add(mut cmd: AddCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
     log::debug!("Full user provided path: {:?}", path);
 
     if !path.exists() {
-        return Err(std::io::Error::new(
+        Err(std::io::Error::new(
             std::io::ErrorKind::NotFound,
             format!("Path {:?} does not exist", path),
-        ))?;
+        ))?
     }
 
     let tmpdir = tempdir()?;

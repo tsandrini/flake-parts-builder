@@ -101,7 +101,7 @@ pub enum PartsTuplesParsingError {
 
 pub fn parse_required_parts_tuples<'a>(
     cmd: &InitCommand,
-    stores: &'a Vec<FlakePartsStore>,
+    stores: &'a [FlakePartsStore],
 ) -> Result<Vec<FlakePartTuple<'a>>, PartsTuplesParsingError> {
     let all_parts_tuples = stores
         .iter()
@@ -161,7 +161,7 @@ pub fn parse_required_parts_tuples<'a>(
     let missing_parts =
         FlakePartTuple::find_missing_parts_in(&final_parts_tuples, &user_req_flake_strings);
 
-    if missing_parts.len() > 0 {
+    if !missing_parts.is_empty() {
         log::error!("Missing parts: {:?}", missing_parts);
         return Err(PartsTuplesParsingError::MissingPartsError(
             missing_parts.into_iter().cloned().collect::<Vec<_>>(),
@@ -172,7 +172,7 @@ pub fn parse_required_parts_tuples<'a>(
         // check_for_conflicts(&final_parts_tuples)?;
         let conflicts = FlakePartTuple::find_conflicting_parts_in(&final_parts_tuples);
 
-        if conflicts.len() > 0 {
+        if !conflicts.is_empty() {
             log::error!("Conflicting parts: {:?}", conflicts);
             return Err(PartsTuplesParsingError::ConflictingPartsError(
                 conflicts
@@ -205,7 +205,7 @@ pub fn prepare_tmpdir(
         );
         dir::copy(
             &part_tuple.part.nix_store_path,
-            &tmp_path,
+            tmp_path,
             &CopyOptions::new()
                 .content_only(true)
                 .skip_exist(init_strategy == &InitStrategy::Skip)
@@ -244,7 +244,7 @@ pub fn prepare_tmpdir(
             "Globally replacing NAMEPLACEHOLDER in tmpdir to name: {}",
             name
         );
-        regex_in_dir_recursive(tmp_path.to_str().unwrap(), &NAMEPLACEHOLDER, name)?;
+        regex_in_dir_recursive(tmp_path.to_str().unwrap(), NAMEPLACEHOLDER, name)?;
     }
 
     Ok(())
@@ -275,7 +275,7 @@ pub fn init(mut cmd: InitCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
         .shared_args
         .parts_stores
         .iter()
-        .map(|store| FlakePartsStore::from_flake_uri(&store, &nix_cmd))
+        .map(|store| FlakePartsStore::from_flake_uri(store, &nix_cmd))
         .collect::<Result<Vec<_>>>()?;
 
     log::debug!(

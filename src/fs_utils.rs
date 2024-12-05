@@ -99,18 +99,16 @@ pub fn merge_dirs(src: &Path, dst: &Path, options: &CopyOptions) -> Result<()> {
         let entry = entry?;
         let target_path = dst.join(entry.path().strip_prefix(src)?);
 
-        if target_path.exists() && false {
+        if target_path.exists() {
             if entry.path().is_file() {
                 // Attempt to merge files
-                merge_files(&entry.path(), &target_path, &entry.path())?;
+                merge_files(entry.path(), &target_path, entry.path())?;
             }
+        } else if entry.path().is_dir() {
+            dir::create_all(&target_path, false)?;
         } else {
-            if entry.path().is_dir() {
-                dir::create_all(&target_path, false)?;
-            } else {
-                // TODO copy_with_progress?
-                dir::copy(&entry.path(), &target_path, &options)?;
-            }
+            // TODO copy_with_progress?
+            dir::copy(entry.path(), &target_path, options)?;
         }
     }
     Ok(())

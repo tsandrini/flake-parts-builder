@@ -56,7 +56,7 @@ impl NixExecutor {
 
     fn nix_command(&self) -> Command {
         let mut cmd = Command::new(&self.nix_binary);
-        cmd.args(&[
+        cmd.args([
             "--extra-experimental-features",
             "nix-command",
             "--extra-experimental-features",
@@ -132,7 +132,7 @@ impl NixCmdInterface for NixExecutor {
             NixCmdInterfaceError::InvalidPath(path.clone()),
         ))?;
 
-        let output = Command::new("nixfmt").arg(&path).output().map_err(|e| {
+        let output = Command::new("nixfmt").arg(path).output().map_err(|e| {
             NixExecutorError::NixCmdInterfaceError(NixCmdInterfaceError::NixCommandError(
                 e.to_string(),
             ))
