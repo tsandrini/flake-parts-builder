@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.0.0-b2 (2025-01-21)
+
+### Feat
+
+- **flake-parts**: add deploy-rs part
+- **flake-parts**: update pre-commit-hooks default
+- **flake-parts**: update treefmt defaults
+- **bootstrap**: add shebang to .envrc
+- **flake-parts**: update issue templates
+- **flake-parts**: add gh-actions-dependabot
+- **flake-parts**: add nix-fast-build system doc
+- **gitignore**: add .pre-commit-config.yaml
+
+### Fix
+
+- **builder**: update old builder hash
+- **flake**: fix version typo
+- **issues**: correct grammar
+- **flake-parts**: fix treefmt projectRootFile
+- **_bootstrap**: fix mapModules function
+- **builder**: use SRI cargo hash instead
+
+### Refactor
+
+- **.envrc**: add shebang to .envrc
+- **builder**: resolve clippy warnings
+- **project**: rename PR template
+- **flake-parts**: rename PR template
+- **flake-parts**: rename to gh-dependabot
+
 ## 1.0.0-b1 (2024-08-01)
 
 ### Feat
