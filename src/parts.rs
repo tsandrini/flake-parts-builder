@@ -47,7 +47,7 @@ impl<'a> FlakePartTuple<'a> {
     }
 
     pub fn resolve_dependencies_of(
-        parts_tuples_pool: &Vec<FlakePartTuple>,
+        parts_tuples_pool: &[FlakePartTuple],
         start_indices: Vec<usize>,
     ) -> (Vec<String>, Vec<String>) {
         use std::collections::{HashSet, VecDeque};
@@ -81,13 +81,13 @@ impl<'a> FlakePartTuple<'a> {
     }
 
     pub fn find_conflicting_parts_in(
-        parts_tuples: &'a Vec<FlakePartTuple>,
+        parts_tuples: &'a [FlakePartTuple],
     ) -> Vec<&'a FlakePartTuple<'a>> {
         let conflicting_parts_uris = parts_tuples
             .iter()
             .flat_map(|part_tuple| {
                 part_tuple.part.metadata.conflicts.iter().map(|conflict| {
-                    normalize_flake_string(&conflict, &part_tuple.store.flake_uri, None)
+                    normalize_flake_string(conflict, &part_tuple.store.flake_uri, None)
                 })
             })
             .collect::<Vec<_>>();
@@ -101,8 +101,8 @@ impl<'a> FlakePartTuple<'a> {
     }
 
     pub fn find_missing_parts_in<'b>(
-        parts_tuples: &Vec<FlakePartTuple>,
-        required_parts: &'b Vec<String>,
+        parts_tuples: &[FlakePartTuple],
+        required_parts: &'b [String],
     ) -> Vec<&'b String> {
         required_parts
             .iter()
@@ -177,7 +177,7 @@ impl FlakePart {
         let eval_output = nix_cmd.eval_nix_file(&nix_store_path.join(META_FILE), true)?;
 
         let metadata: FlakePartMetadata = serde_json::from_str(&eval_output)
-            .map_err(|e| FlakePartParseError::MetadataConversionError(e))?;
+            .map_err(FlakePartParseError::MetadataConversionError)?;
 
         Ok(Self::new(name.to_string(), nix_store_path, metadata))
     }
@@ -212,7 +212,7 @@ impl FlakePartsStore {
             .map(|entry| {
                 let entry = entry?;
 
-                Ok(FlakePart::from_path(entry.path(), nix_cmd)?)
+                FlakePart::from_path(entry.path(), nix_cmd)
             })
             .collect::<Result<_>>()?;
 

@@ -39,7 +39,7 @@ pub fn list(mut cmd: ListCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
             writeln!(&mut stdout, " # {}", flake_uri)?;
 
             // TODO maybe some error message instead of unwrap?
-            FlakePartsStore::from_flake_uri(&flake_uri, &nix_cmd)
+            FlakePartsStore::from_flake_uri(flake_uri, &nix_cmd)
                 .unwrap()
                 .parts
                 .iter()
@@ -62,7 +62,7 @@ pub fn list(mut cmd: ListCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
                     Ok(()) as Result<()>
                 })?;
 
-            println!("");
+            println!();
             Ok(())
         })
 }

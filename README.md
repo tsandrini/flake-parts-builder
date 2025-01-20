@@ -115,6 +115,7 @@ flake-parts-builder list
   - +home-manager: (Collection) Home-manager related parts.
   - +nixos: (Collection) NixOS related parts.
   - agenix: Bindings for the agenix secrets manager with prepared NixOS/HM modules ready to be used in your configurations.
+  - deploy-rs: A Simple multi-profile Nix-flake deploy tool.
   - devenv: Flake bindings for the `github:cachix/devenv` development environment.
   - flake-root: Provides `config.flake-root` variable pointing to the root of the flake project.
   - gh-actions-check: Adds a simple `nix flake check` GitHub action workflow.

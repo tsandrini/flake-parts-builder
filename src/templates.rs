@@ -17,7 +17,7 @@ impl FlakeInputsContext {
         Self { inputs }
     }
 
-    pub fn from_merged_metadata(metadata: &Vec<&FlakePartMetadata>) -> Self {
+    pub fn from_merged_metadata(metadata: &[&FlakePartMetadata]) -> Self {
         let inputs = metadata
             .iter()
             .fold(JsonValue::Object(Default::default()), |mut acc, m| {
@@ -36,7 +36,7 @@ impl FlakeInputsContext {
 
     pub fn render(&self) -> Result<String> {
         let mut env = Environment::new();
-        env.add_template("flake-inputs.nix", &FLAKE_INPUTS_TEMPLATE)
+        env.add_template("flake-inputs.nix", FLAKE_INPUTS_TEMPLATE)
             .unwrap();
         let tmpl = env.get_template("flake-inputs.nix").unwrap();
         let rendered = tmpl.render(context! ( context => self))?;
@@ -64,7 +64,7 @@ impl FlakeContext {
         }
     }
 
-    pub fn from_merged_metadata(metadata: &Vec<&FlakePartMetadata>) -> Self {
+    pub fn from_merged_metadata(metadata: &[&FlakePartMetadata]) -> Self {
         let flake_inputs_context = FlakeInputsContext::from_merged_metadata(metadata);
 
         let extra_trusted_public_keys = metadata
@@ -86,8 +86,8 @@ impl FlakeContext {
 
     pub fn render(&self) -> Result<String> {
         let mut env = Environment::new();
-        env.add_template("flake.nix", &FLAKE_TEMPLATE).unwrap();
-        env.add_template("flake-inputs.nix", &FLAKE_INPUTS_TEMPLATE)
+        env.add_template("flake.nix", FLAKE_TEMPLATE).unwrap();
+        env.add_template("flake-inputs.nix", FLAKE_INPUTS_TEMPLATE)
             .unwrap();
         let tmpl = env.get_template("flake.nix").unwrap();
         let rendered = tmpl.render(context! ( context => self))?;
