@@ -203,7 +203,7 @@
                   mkFlakeParts {
                     inherit stdenv;
                     name = "flake-parts-bootstrap";
-                    version = "r.0.0-b2";
+                    version = "1.0.0-b2";
                     src = ./flake-parts-bootstrap;
 
                     meta = with lib; {
