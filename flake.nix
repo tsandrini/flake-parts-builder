@@ -25,7 +25,7 @@
         let
           finalArgs = {
             name = "flake-parts";
-            version = "1.0.0-b1";
+            version = "1.0.0-b2";
 
             dontConfigure = true;
             dontBuild = true;
@@ -97,7 +97,7 @@
                   }:
                   rustPlatform.buildRustPackage {
                     name = "flake-parts-builder";
-                    version = "1.0.0-b1";
+                    version = "1.0.0-b2";
 
                     src = [
                       ./src
@@ -177,7 +177,7 @@
                   mkFlakeParts {
                     inherit stdenv;
                     name = "flake-parts";
-                    version = "1.0.0-b1";
+                    version = "1.0.0-b2";
                     src = ./flake-parts;
 
                     meta = with lib; {
@@ -203,7 +203,7 @@
                   mkFlakeParts {
                     inherit stdenv;
                     name = "flake-parts-bootstrap";
-                    version = "1.0.0-b1";
+                    version = "r.0.0-b2";
                     src = ./flake-parts-bootstrap;
 
                     meta = with lib; {
@@ -236,6 +236,10 @@
                     gh,
                     gh-dash,
                     markdownlint-cli,
+                    rustc,
+                    pkg-config,
+                    cargo,
+                    openssl,
                   }:
                   mkShell {
                     buildInputs = [
@@ -259,6 +263,10 @@
                       # typos # Source code spell checker
 
                       # -- (YOUR) EXTRA PKGS --
+                      rustc
+                      cargo
+                      pkg-config
+                      openssl
                     ];
 
                     shellHook = ''
