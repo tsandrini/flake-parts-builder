@@ -243,7 +243,7 @@ The same thing works for overriding the `nixfmt` binary using the
 `NIXFMT_BIN_PATH` environment variable
 
 ```bash
-NIX_BIN_PATH=/bin/nixfmt-classic flake-parts-builder init -p +home-manager,shells myNewProject
+NIXFMT_BIN_PATH=/bin/nixfmt-classic flake-parts-builder init -p +home-manager,shells myNewProject
 ```
 
 ### Why not use `flake.templates` instead?
