@@ -13,6 +13,9 @@ pub enum NixCmdInterfaceError {
 
     #[error("failed to run nix command: {0}")]
     NixCommandError(String),
+
+    #[error("failed to run nixfmt command: {0}")]
+    NixfmtCommandError(String),
 }
 
 pub trait NixCmdInterface {
@@ -26,6 +29,7 @@ pub trait NixCmdInterface {
 
 pub struct NixExecutor {
     nix_binary: PathBuf,
+    nixfmt_binary: PathBuf,
 }
 
 #[derive(Error, Debug)]
@@ -36,13 +40,19 @@ pub enum NixExecutorError {
     #[error("nix binary not found")]
     NixBinaryNotFound,
 
+    #[error("nixfmt binary not found")]
+    NixfmtBinaryNotFound,
+
     #[error("nix command failed with nonzero status: {0}")]
     NonzeroStatusError(String),
 }
 
 impl NixExecutor {
-    pub fn new(nix_binary: PathBuf) -> Self {
-        Self { nix_binary }
+    pub fn new(nix_binary: PathBuf, nixfmt_binary: PathBuf) -> Self {
+        Self {
+            nix_binary,
+            nixfmt_binary,
+        }
     }
 
     pub fn from_env() -> Result<Self, NixExecutorError> {
@@ -51,7 +61,12 @@ impl NixExecutor {
             .or_else(|| which::which("nix").ok())
             .ok_or(NixExecutorError::NixBinaryNotFound)?;
 
-        Ok(Self::new(nix_binary))
+        let nixfmt_binary = std::env::var_os("NIXFMT_BIN_PATH")
+            .map(PathBuf::from)
+            .or_else(|| which::which("nixfmt").ok())
+            .ok_or(NixExecutorError::NixfmtBinaryNotFound)?;
+
+        Ok(Self::new(nix_binary, nixfmt_binary))
     }
 
     fn nix_command(&self) -> Command {
@@ -63,6 +78,10 @@ impl NixExecutor {
             "flakes",
         ]);
         cmd
+    }
+
+    fn nixfmt_command(&self) -> Command {
+        Command::new(&self.nixfmt_binary)
     }
 }
 
@@ -132,8 +151,8 @@ impl NixCmdInterface for NixExecutor {
             NixCmdInterfaceError::InvalidPath(path.clone()),
         ))?;
 
-        let output = Command::new("nixfmt").arg(path).output().map_err(|e| {
-            NixExecutorError::NixCmdInterfaceError(NixCmdInterfaceError::NixCommandError(
+        let output = self.nixfmt_command().arg(path).output().map_err(|e| {
+            NixExecutorError::NixCmdInterfaceError(NixCmdInterfaceError::NixfmtCommandError(
                 e.to_string(),
             ))
         })?;

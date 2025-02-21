@@ -14,7 +14,7 @@
       inherit (inputs.nixpkgs) lib;
 
       tsandrini = {
-        email = "tomas.sandrini@seznam.cz";
+        email = "t@tsandrini.sh";
         name = "Tomáš Sandrini";
         github = "tsandrini";
         githubId = 21975189;
@@ -93,6 +93,7 @@
                     rustPlatform,
                     nixfmt-rfc-style,
                     nix,
+                    makeWrapper,
                     tsandrini,
                   }:
                   rustPlatform.buildRustPackage {
@@ -138,17 +139,29 @@
                       cargo doc --no-deps --release
                     '';
 
+                    NIX_BIN_PATH = lib.getExe nix;
+                    NIXFMT_BIN_PATH = lib.getExe nixfmt-rfc-style;
+
                     postInstall = ''
                       mkdir -p $out/doc
                       cp -r target/doc $out/
                     '';
+
+                    nativeBuildInputs = [
+                      makeWrapper
+                    ];
 
                     buildInputs = [
                       nixfmt-rfc-style
                       nix
                     ];
 
-                    NIX_BIN_PATH = "${nix}/bin/nix";
+                    # Just add required binaries to PATH, letting the Rust
+                    # program's which::which handle discovery
+                    postFixup = ''
+                      wrapProgram $out/bin/flake-parts-builder \
+                        --prefix PATH : ${lib.makeBinPath [ nix nixfmt-rfc-style ]}
+                    '';
 
                     meta = with lib; {
                       homepage = "https://github.com/tsandrini/flake-parts-builder";
