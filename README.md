@@ -227,7 +227,7 @@ an attrset with the following structure.
 
 ## Additional questions, issues 🗣️
 
-### How can I use a custom version of the `nix` binary?
+### How can I use a custom version of the `nix` or `nixfmt` binary?
 
 If installed via the nix package manager, `flake-parts-builder` will use
 an isolated version of `pkgs.nixVersions.stable` with
@@ -237,6 +237,13 @@ for example
 
 ```bash
 NIX_BIN_PATH=/bin/patched-nix flake-parts-builder init -p +home-manager,shells myNewProject
+```
+
+The same thing works for overriding the `nixfmt` binary using the 
+`NIXFMT_BIN_PATH` environment variable
+
+```bash
+NIX_BIN_PATH=/bin/nixfmt-classic flake-parts-builder init -p +home-manager,shells myNewProject
 ```
 
 ### Why not use `flake.templates` instead?
