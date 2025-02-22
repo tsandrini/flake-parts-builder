@@ -253,6 +253,7 @@
                     pkg-config,
                     cargo,
                     openssl,
+                    cargo-audit
                   }:
                   mkShell {
                     buildInputs = [
@@ -280,6 +281,7 @@
                       cargo
                       pkg-config
                       openssl
+                      cargo-audit
                     ];
 
                     shellHook = ''
