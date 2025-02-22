@@ -5,20 +5,21 @@ let
 in
 {
   flake.deploy.nodes = {
-    "myExampleNode" = {
-      hostname = "10.0.0.1";
-
-      profiles.system = {
-        sshUser = "admin";
-        user = "root";
-
-        autoRollback = true;
-        magicRollback = true;
-
-        # TODO specify flake-parts attribute of your node configuration
-        path = deploy-rs.lib.x86_64-linux.activate.nixos config.flake.nixosConfigurations."myExampleNode";
-      };
-    };
+    # NOTE example node configuration
+    # "myExampleNode" = {
+    #   hostname = "10.0.0.1";
+    #
+    #   profiles.system = {
+    #     sshUser = "admin";
+    #     user = "root";
+    #
+    #     autoRollback = true;
+    #     magicRollback = true;
+    #
+    #     # TODO specify flake-parts attribute of your node configuration
+    #     path = deploy-rs.lib.x86_64-linux.activate.nixos config.flake.nixosConfigurations."myExampleNode";
+    #   };
+    # };
   };
 
   # NOTE This way we can automatically enable checks for all nodes
