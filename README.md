@@ -251,7 +251,7 @@ NIXFMT_BIN_PATH=/bin/nixfmt-classic flake-parts-builder init -p +home-manager,sh
 The `flake.templates` flake output is a static property by design that needs
 to point to a fixed path with fixed content known ahead of time, which makes
 it heavily impractical for any kind of dynamic evaluation. One could,
-given the set of parts, prepare all of the possible combination of templates
+given the set of parts, prepare all of the possible combinations of templates
 with some patching script and
 directly update the source code of `flake.nix`, however ... At the time of
 this writing there are currently $27+1$ flake parts provided by this flake in
