@@ -1,7 +1,7 @@
 ---
 name: 💡 Feature Request
 about: Suggest an interesting feature idea for this project
-title: '💡[FEATURE]: '
+title: '💡[Feature]: '
 labels: "enhancement"
 assignees: ""
 ---
