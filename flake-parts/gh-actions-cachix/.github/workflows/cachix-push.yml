@@ -17,7 +17,7 @@ jobs:
       - name: "Installing and configuring the nix package manager..."
         uses: cachix/install-nix-action@v31
         with:
-          extra-nix-conf: |
+          extra_nix_config: |
             accept-flake-config = true
 
       # NOTE: Alternatively you can use the DeterminateSystems nix installer
