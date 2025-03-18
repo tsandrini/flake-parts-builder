@@ -114,14 +114,17 @@ flake-parts-builder list
   - +github: (Collection) GitHub related parts
   - +home-manager: (Collection) Home-manager related parts.
   - +nixos: (Collection) NixOS related parts.
+  - +nixvim: (Collection) All of the nixvim related parts.
   - agenix: Bindings for the agenix secrets manager with prepared NixOS/HM modules ready to be used in your configurations.
   - deploy-rs: A Simple multi-profile Nix-flake deploy tool.
   - devenv: Flake bindings for the `github:cachix/devenv` development environment.
   - flake-root: Provides `config.flake-root` variable pointing to the root of the flake project.
+  - gh-actions-cachix: Adds a simple cachix/cachix-action GitHub action workflow.
   - gh-actions-check: Adds a simple `nix flake check` GitHub action workflow.
   - gh-actions-flake-update: Adds the periodic `DeterminateSystems/update-flake-lock` GitHub action workflow.
   - gh-actions-flakehub: Adds the push to FlakeHub GitHub action workflow.
   - gh-actions-pages: Adds a GitHub action that runs `nix build .#pages` and deploys the result to GitHub pages.
+  - gh-dependabot: A basic GitHub dependabot starting template.
   - gh-templates-PR: Adds a basic GitHub pull request template.
   - gh-templates-issues: Adds basic bug/feature GitHub issue templates.
   - gitlab-ci-check: Adds a simple `nix flake check` to your GitLab CI/CD pipeline.
@@ -131,6 +134,8 @@ flake-parts-builder list
   - nix-topology: Adds bindings for the `github:oddlama/nix-topology` project to generate graphs of your networks.
   - nixos-hosts: Template for your NixOS hosts and a handy generator for `lib.nixosSystem` calls.
   - nixos-modules: Basic template for custom NixOS modules.
+  - nixvim-configurations: Template for Nixvim configurations to handle multiple neovim instances.
+  - nixvim-modules: Basic template for reusable nixvim modules.
   - overlays: Basic template for custom nixpkgs overlays.
   - pkgs: Basic template for custom nix packages (ie derivations).
   - pre-commit-hooks: Bindings for pre-commit-hooks.nix and a simple pre-commit-hook template.
