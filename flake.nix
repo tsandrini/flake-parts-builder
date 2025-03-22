@@ -54,7 +54,7 @@
 
         mapModules =
           dir: fn:
-          mapFilterAttrs (n: v: v != null && !(lib.hasPrefix "_" n) && !(lib.lib.hasPrefix ".git" n)) (
+          mapFilterAttrs (n: v: v != null && !(lib.hasPrefix "_" n) && !(lib.hasPrefix ".git" n)) (
             n: v:
             let
               path = "${toString dir}/${n}";
