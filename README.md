@@ -148,6 +148,41 @@ flake-parts-builder list
   - _bootstrap: (Required) Minimal set of functions used to bootstrap your flake-parts project.
 ```
 
+## `flake-parts-builder.lib` API
+
+If you'd like to remove the `./flake-parts/_bootstrap.nix` file or you'd prefer
+using any of the flake-parts functionality in a different set of circumstances 
+then you can use the `flake-parts-builder.lib` output that this repo exposes. You could 
+then rewrite your `flake.nix` in a following manner (this, however, adds an
+additional  dependency to your project)
+
+```nix
+# --- flake.nix
+{
+  inputs = {
+    # --- BASE DEPENDENCIES ---
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    flake-parts-builder.url = "github:tsandrini/flake-parts-builder";
+
+    # --- (YOUR) EXTRA DEPENDENCIES ---
+  };
+
+  outputs =
+    inputs@{ flake-parts, ... }:
+    let
+      inherit (inputs.nixpkgs) lib;
+      inherit (inputs.flake-parts-builder.lib) loadParts;
+    in
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      imports = loadParts ./flake-parts;
+    };
+}
+```
+
+For more info regarding the API of any of these functions, please refer to the 
+doccomments of said functions in the `flake.nix` file.
+
 ## Using your own parts 👨‍💻👩‍💻
 
 `flake-parts-builder` was designed from the ground up with extensibility in mind.
@@ -191,6 +226,18 @@ stdenv.mkDerivation {
 }
 ```
 
+This flake also exposes a handy wrapper at `flake-parts-builder.lib.mkFlakeParts`,
+which shortens the previous example to
+
+```nix
+mkFlakeParts {
+  inherit stdenv; # NOTE: Required
+  name = "my-custom-flake-parts";
+  version = "1.0.0";
+  src = ./flake-parts;
+}
+```
+
 ### Custom flake-parts 
 
 A **flake-part** is any folder with a **meta.nix** file at its root containing
@@ -206,8 +253,8 @@ an attrset with the following structure.
   };
   dependencies = [ ];
   conflicts = [ "shells" ];
-  extraTrustedPublicKeys = [ "https://devenv.cachix.org" ];
-  extraSubstituters = [ "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=" ];
+  extraTrustedPublicKeys = [ "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=" ];
+  extraSubstituters = [ "https://devenv.cachix.org" ];
 }
 ```
 
