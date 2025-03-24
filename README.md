@@ -153,7 +153,7 @@ flake-parts-builder list
 If you'd like to remove the `./flake-parts/_bootstrap.nix` file or you'd prefer
 using any of the flake-parts functionality in a different set of circumstances 
 then you can use the `flake-parts-builder.lib` output that this repo exposes. You could 
-then rewrite your `flake.nix` in a following manner (this, however, adds an
+then rewrite your `flake.nix` in the following manner (this, however, adds an
 additional  dependency to your project)
 
 ```nix

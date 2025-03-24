@@ -56,7 +56,7 @@
         inherit mkFlakeParts;
 
         /*
-          Main function for recursively traversing and loading all the modules 
+          Main function for recursively traversing and loading all modules 
           in a provded flake-parts  directory.
 
           For more information and specifics on how this function works, see the
