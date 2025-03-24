@@ -5,7 +5,7 @@
 [![cachix](https://github.com/tsandrini/flake-parts-builder/actions/workflows/cachix-push.yml/badge.svg)](https://github.com/tsandrini/flake-parts-builder/actions/workflows/cachix-push.yml)
 [![flake.lock update](https://github.com/tsandrini/flake-parts-builder/actions/workflows/update-flake-lock.yml/badge.svg)](https://github.com/tsandrini/flake-parts-builder/actions/workflows/update-flake-lock.yml)
 
-## About 📝
+## 1. About 📝
 
 Building a new [flake-parts](https://github.com/hercules-ci/flake-parts) project?
 Need a template with all the necessary boilerplate, but none perfectly fits your
@@ -39,7 +39,7 @@ Okay, but what exactly does it do then?
 - `flake-parts-builder list` - **list** all currently available flake-parts to
   be used with the `list` and `add` subcommands
 
-## Installation 🤖
+## 2. Installation 🤖
 
 **Disclaimer**: `flake-parts-builder` is built on top of nix
 [flakes](https://wiki.nixos.org/wiki/Flakes) and
@@ -52,13 +52,13 @@ features are then a forced requirement
 *NOTE*: if enough people will be using this project I don't have any issues
 with pushing it into upstream  [nixpkgs](https://github.com/NixOS/nixpkgs).
 
-### Nix CLI
+### 2.1. Nix CLI
 
 ```bash
 nix profile install github:tsandrini/flake-parts-builder
 ```
 
-### NixOS
+### 2.2. NixOS
 
 ```nix
 {
@@ -80,7 +80,7 @@ nix profile install github:tsandrini/flake-parts-builder
 }
 ```
 
-## Binary cache 💾
+### 3. Binary cache 💾
 
 `flake-parts-builder` is written in Rust with minimal dependencies to ensure
 safety and consistency, however, there is also a binary cache available if you'd
@@ -97,7 +97,7 @@ like to skip the build process.
   };
 ```
 
-## Available parts 📂
+## 4. Available parts 📂
 
 You can list all of the available parts with the `flake-parts-builder list`
 subcommand, which goes through all of the flake-parts stores passed via the `-I`
@@ -148,7 +148,7 @@ flake-parts-builder list
   - _bootstrap: (Required) Minimal set of functions used to bootstrap your flake-parts project.
 ```
 
-## `flake-parts-builder.lib` API
+## 6. `flake-parts-builder.lib` API
 
 If you'd like to remove the `./flake-parts/_bootstrap.nix` file or you'd prefer
 using any of the flake-parts functionality in a different set of circumstances 
@@ -183,7 +183,7 @@ additional  dependency to your project)
 For more info regarding the API of any of these functions, please refer to the 
 doccomments of said functions in the `flake.nix` file.
 
-## Using your own parts 👨‍💻👩‍💻
+## 7. Using your own parts 👨‍💻👩‍💻
 
 `flake-parts-builder` was designed from the ground up with extensibility in mind.
 To be able to use local parts, remote parts and cache parts in an easy manner
@@ -204,7 +204,7 @@ Thanks to the wonders of nix, the flake-parts stores will be resolved & fetched
 only once and on successive calls, they will be copied directly from you local
 `/nix/store` cache.
 
-### Custom flake-parts-stores
+### 7.1. Custom flake-parts-stores
 
 A **flake-part store** is any derivation that has **flake-parts** located at
 `$out/flake-parts`, so for example the following snippet
@@ -238,7 +238,7 @@ mkFlakeParts {
 }
 ```
 
-### Custom flake-parts 
+### 7.2. Custom flake-parts 
 
 A **flake-part** is any folder with a **meta.nix** file at its root containing
 an attrset with the following structure.
@@ -277,9 +277,9 @@ an attrset with the following structure.
 - `extraSubstituters`: merged with all of the required parts and pasted into the
   final `flake.nix`, for security purposes they are all commented out
 
-## Additional questions, issues 🗣️
+## 8. Additional questions, issues 🗣️
 
-### How can I use a custom version of the `nix` or `nixfmt` binary?
+### 8.1. How can I use a custom version of the `nix` or `nixfmt` binary?
 
 If installed via the nix package manager, `flake-parts-builder` will use
 an isolated version of `pkgs.nixVersions.stable` with
@@ -298,7 +298,7 @@ The same thing works for overriding the `nixfmt` binary using the
 NIXFMT_BIN_PATH=/bin/nixfmt-classic flake-parts-builder init -p +home-manager,shells myNewProject
 ```
 
-### Why not use `flake.templates` instead?
+### 8.2. Why not use `flake.templates` instead?
 
 The `flake.templates` flake output is a static property by design that needs
 to point to a fixed path with fixed content known ahead of time, which makes
@@ -319,7 +319,7 @@ with just one part per template. :skull:
 
 I hope this is enough of an answer.
 
-### Can't we just stuff this functionality into `flakeModules`?
+### 8.3. Can't we just stuff this functionality into `flakeModules`?
 
 I totally agree there is a fine line between a reusable piece of functionality
 and boilerplate template code and I personally can't think of a general enough
@@ -335,7 +335,7 @@ they are too specific, they typically represent the end user options of some
 existing `flakeModule`s. Wrapping this code into another layer of modularity
 doesn't make sense, since this is meant to be a piece of configuration code.
 
-### Help! I'm experiencing an XYZ bug!
+### 8.4. Help! I'm experiencing an XYZ bug!
 
 I'm sorry for the inconvenience, please run whatever is producing said bug
 with these `RUST_LOG=debug RUST_BACKTRACE=full` environment variables, 
