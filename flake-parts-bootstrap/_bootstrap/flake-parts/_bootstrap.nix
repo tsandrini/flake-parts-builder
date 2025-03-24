@@ -8,6 +8,17 @@ rec {
   # the `lib` attribute of the `github:tsandrini/flake-parts-builder`
   # flake, however, that brings an additional dependency to the project,
   # which may be undesirable for some and isn't really necessary.
+
+
+  /*
+    Main function for recursively traversing and loading all the modules 
+    in a provded flake-parts  directory.
+
+    For more information and specifics on how this function works, see the
+    doccomment of the `loadModules` function below.
+
+    *Type*: `loadParts :: Path -> { name :: String; value :: AttrSet a; }`
+  */
   loadParts = dir: flatten (mapModules dir (x: x));
 
   /*
