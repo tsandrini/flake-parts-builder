@@ -16,7 +16,7 @@ in
   # Add a router that we use to access the internet
   nodes.router = mkRouter "Example Router" {
     info = "Example Router";
-    # image = ./images/fritzbox.png;
+    # image = ./assets/images/example-router.png;
     interfaceGroups = [
       [
         "eth1"
