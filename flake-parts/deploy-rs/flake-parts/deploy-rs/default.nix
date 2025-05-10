@@ -2,6 +2,9 @@
 { inputs, config, ... }:
 let
   inherit (inputs) deploy-rs;
+
+  hostPath =
+    system: name: deploy-rs.lib.${system}.activate.nixos config.flake.nixosConfigurations.${name};
 in
 {
   flake.deploy.nodes = {
@@ -17,7 +20,7 @@ in
     #     magicRollback = true;
     #
     #     # TODO specify flake-parts attribute of your node configuration
-    #     path = deploy-rs.lib.x86_64-linux.activate.nixos config.flake.nixosConfigurations."myExampleNode";
+    #     path = hostPath "x86_64-linux" "myExampleNode";
     #   };
     # };
   };
