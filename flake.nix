@@ -202,7 +202,7 @@
                       export HOME=$TMPDIR/home
                     '';
 
-                    cargoHash = "sha256-nrsbjycq1FYuDnbmbC+XIMgUYvtyblUWmjANkTn5l9w=";
+                    cargoHash = "sha256-Vb5QPw8inbG3oLLsaMe53jiMTqTWrHsPf/HdeduE2YE=";
 
                     postBuild = ''
                       cargo doc --no-deps --release

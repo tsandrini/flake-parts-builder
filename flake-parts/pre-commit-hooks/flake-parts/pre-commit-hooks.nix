@@ -25,6 +25,13 @@
             # actionlint.enable = true; # GitHub workflows linting
             # typos.enable = true; # Source code spell checker
 
+            # General use pre-commit hooks
+            trim-trailing-whitespace.enable = true;
+            mixed-line-endings.enable = true;
+            end-of-file-fixer.enable = true;
+            check-executables-have-shebangs.enable = true;
+            check-added-large-files.enable = true;
+
             gitleaks = {
               enable = true;
               name = "gitleaks";
