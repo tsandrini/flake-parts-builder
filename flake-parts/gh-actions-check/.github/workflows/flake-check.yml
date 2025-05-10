@@ -11,6 +11,20 @@ on:
   repository_dispatch:
     types: [create-pull-request]
 
+env:
+  BUILD_OPTS: >-
+    --no-nom
+    --no-link
+    --skip-cached
+    --option accept-flake-config true
+# TODO: Additional specs for the parallelization, for more info see
+# https://github.com/Mic92/nix-fast-build
+#    --eval-workers 4
+#    --max-jobs 4
+#    --eval-max-memory-size 1024
+#    --systems x86_64-linux aarch64-linux
+
+
 jobs:
   flake-check:
     runs-on: "ubuntu-latest"
@@ -31,25 +45,27 @@ jobs:
       #     extra-conf: |
       #       accept-flake-config = true
 
+      # NOTE: Optional cachix action, this will automatically upload
+      #       all of the upcoming build artifacts
+      # - name: "Settings up cachix binary cache..."
+      #   uses: cachix/cachix-action@v16
+      #   with:
+      #     name: organization
+      #     authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
       # NOTE Install any necessary packages here
       - name: "Setting up packages..."
         run: |
           nix profile install nixpkgs#nix-fast-build # parallel nix builder
 
-      - name: "Running `nix flake check`..."
-        run: nix-fast-build --skip-cached --no-nom
-        # NOTE: You can also limit the build only to the currentSystem if needed
-        # run: nix-fast-build --skip-cached --no-nom --flake ".#checks.$(nix eval --raw --impure --expr builtins.currentSystem)"
+      - name: "Building `.#checks` attribute..."
+        run: nix-fast-build ${BUILD_OPTS} --flake '.#checks'
 
-      - name: "Running `nix build ...`..."
-        run: nix-fast-build --skip-cached --no-nom --flake ".#packages"
-        # NOTE: You can also limit the build only to the currentSystem if needed
-        # run: nix-fast-build --skip-cached --no-nom --flake ".#packages.$(nix eval --raw --impure --expr builtins.currentSystem)"
+      - name: "Building `.#packages` attribute..."
+        run: nix-fast-build ${BUILD_OPTS} --flake '.#packages'
 
-      - name: "Running `nix develop...`..."
-        run: nix-fast-build --skip-cached --no-nom --flake ".#devShells"
-        # NOTE: You can also limit the build only to the currentSystem if needed
-        # run: nix-fast-build --skip-cached --no-nom --flake ".#devShells.$(nix eval --raw --impure --expr builtins.currentSystem)"
+      - name: "Building `.#devShells` attribute..."
+        run: nix-fast-build ${BUILD_OPTS} --flake '.#devShells'
 
       - name: "Checking flake inputs for stale & insecure nixpkgs versions..."
         uses: DeterminateSystems/flake-checker-action@main
