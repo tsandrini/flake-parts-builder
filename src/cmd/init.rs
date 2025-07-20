@@ -1,6 +1,7 @@
 use clap::{Args, ValueEnum};
 use color_eyre::eyre::Result;
 use fs_extra::dir::{self, CopyOptions};
+use fs_extra::file;
 use std::fs;
 use std::path::PathBuf;
 use tempfile::{tempdir, TempDir};
@@ -195,6 +196,7 @@ pub fn prepare_tmpdir(
     target_name: Option<&str>,
     init_strategy: &InitStrategy,
     render_flake_nix: bool,
+    write_meta: bool,
 ) -> Result<()> {
     // TODO MERGE STRATEGY
     let tmp_path = tmpdir.path();
@@ -211,6 +213,26 @@ pub fn prepare_tmpdir(
                 .skip_exist(init_strategy == &InitStrategy::Skip)
                 .overwrite(init_strategy == &InitStrategy::Overwrite),
         )?;
+
+        if write_meta {
+            log::debug!("Writing part meta: {:?}", part_tuple.part.name.clone());
+
+            let from = part_tuple.part.nix_store_path.join(META_FILE);
+            let dir = tmp_path.join(BASE_DERIVATION_NAME).join("_meta");
+            let dest = dir.join(part_tuple.part.name.clone() + ".nix");
+
+            if !dir.exists() {
+                dir::create_all(dir, false)?;
+            }
+
+            file::copy(
+                from,
+                dest,
+                &file::CopyOptions::new()
+                .skip_exist(init_strategy == &InitStrategy::Skip)
+                .overwrite(init_strategy == &InitStrategy::Overwrite),
+             )?;
+        }
     }
 
     log::debug!("Removing meta file from tmpdir");
@@ -305,6 +327,7 @@ pub fn init(mut cmd: InitCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
         path.file_name().map(|osstr| osstr.to_str().unwrap()),
         &cmd.strategy,
         true,
+        cmd.shared_args.write_meta
     )?;
 
     log::info!("Project successfully prepared in tmpdir, now copying to target directory");

@@ -80,6 +80,7 @@ pub fn add(mut cmd: AddCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
         path.file_name().map(|osstr| osstr.to_str().unwrap()),
         &cmd.init.strategy,
         false,
+        cmd.init.shared_args.write_meta
     )?;
 
     // NOTE the flake.nix file shouldn't be present due to the strucutre of
@@ -94,12 +95,14 @@ pub fn add(mut cmd: AddCommand, nix_cmd: impl NixCmdInterface) -> Result<()> {
         .map(|part_tuple| &part_tuple.part.metadata)
         .collect::<Vec<_>>();
 
-    log::info!("Rendering `flake-inputs.nix.template` inputs");
-    let flake_context = FlakeInputsContext::from_merged_metadata(&metadata);
+    if !cmd.init.shared_args.write_meta {
+        log::info!("Rendering `flake-inputs.nix.template` inputs");
+        let flake_context = FlakeInputsContext::from_merged_metadata(&metadata);
 
-    let rendered = flake_context.render()?;
-    println!("Please add the following snippet to your `flake.nix` inputs:");
-    println!("{}", rendered);
+        let rendered = flake_context.render()?;
+        println!("Please add the following snippet to your `flake.nix` inputs:");
+        println!("{}", rendered);
+    }
 
     log::info!("Addition succesfully prepared in tmpdir, now copying to target directory");
     dir::copy(

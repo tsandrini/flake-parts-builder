@@ -35,6 +35,15 @@ pub struct SharedArgs {
     #[arg(long = "disable-base", default_value_t = false, verbatim_doc_comment)]
     pub disable_base_parts: bool,
 
+    /// Write flake-parts-meta/<part>.nix file.
+    /// 
+    /// This is useful for other Nix tools that can process the meta file.
+    /// 
+    /// For example, `github:vic/flake-file` can update your flake inputs from them.
+    /// See https://github.com/vic/flake-file#parts_templates
+    #[arg(long = "write-meta", default_value_t = false, verbatim_doc_comment)]
+    pub write_meta: bool,
+
     /// Enable verbose logging
     #[arg(short, long, default_value_t = false)]
     pub verbose: bool,
