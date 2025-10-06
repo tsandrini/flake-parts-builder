@@ -15,7 +15,7 @@ jobs:
       contents: "read"
     steps:
       - name: "Checking out repository..."
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: "Installing and configuring the nix package manager..."
         uses: cachix/install-nix-action@v31
